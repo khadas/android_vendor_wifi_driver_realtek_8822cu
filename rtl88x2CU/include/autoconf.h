@@ -42,7 +42,7 @@
 #endif
 
 #ifdef CONFIG_80211AC_VHT
-	/* #define CONFIG_BEAMFORMING */
+	#define CONFIG_BEAMFORMING
 #endif
 
 /* set CONFIG_IOCTL_CFG80211 from Makefile */
@@ -127,7 +127,6 @@
 
 /*#endif*/	/* CONFIG_MP_INCLUDED */
 
-#define CONFIG_AP_MODE	1
 #ifdef CONFIG_AP_MODE
 	/* #define CONFIG_INTERRUPT_BASED_TXBCN */ /* Tx Beacon when driver BCN_OK ,BCN_ERR interrupt occurs */
 	#if defined(CONFIG_CONCURRENT_MODE) && defined(CONFIG_INTERRUPT_BASED_TXBCN)
@@ -145,7 +144,6 @@
 	#define CONFIG_FIND_BEST_CHANNEL	1
 #endif
 
-#define CONFIG_P2P	1
 #ifdef CONFIG_P2P
 	/* The CONFIG_WFD is for supporting the Wi-Fi display */
 	#define CONFIG_WFD
@@ -177,7 +175,7 @@
 
 #define CONFIG_SKB_COPY	1 /* amsdu */
 
-/* #define CONFIG_RTW_LED */
+#define CONFIG_RTW_LED
 #ifdef CONFIG_RTW_LED
 	#define CONFIG_RTW_SW_LED
 	#ifdef CONFIG_RTW_SW_LED
@@ -189,9 +187,6 @@
 #define CONFIG_GLOBAL_UI_PID
 
 /*#define CONFIG_RTW_80211K*/
-
-#define CONFIG_LAYER2_ROAMING
-#define CONFIG_LAYER2_ROAMING_RESUME
 /*#define CONFIG_ADAPTOR_INFO_CACHING_FILE */ /* now just applied on 8192cu only, should make it general... */
 /*#define CONFIG_RESUME_IN_WORKQUEUE */
 /*#define CONFIG_SET_SCAN_DENY_TIMER */

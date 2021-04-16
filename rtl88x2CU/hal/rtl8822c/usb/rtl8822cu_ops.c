@@ -58,6 +58,10 @@ static u8 sethwreg(PADAPTER padapter, u8 variable, u8 *val)
 			/* use 16k to workaround for HISILICON platform */
 			pHalData->rxagg_usb_timeout = 8;
 			pHalData->rxagg_usb_size = 3;
+#elif defined(CONFIG_PLATFORM_RTK119X_AM)
+			/* reduce rxagg_usb_timeout to avoid rx fifo full at high throughput case */
+			pHalData->rxagg_usb_timeout = 0x10;
+			pHalData->rxagg_usb_size = 0x05;
 #else
 			/* default setting */
 			pHalData->rxagg_usb_timeout = 0x20;
@@ -117,6 +121,21 @@ static u8 sethwreg(PADAPTER padapter, u8 variable, u8 *val)
 				if (status)
 					*val = _TRUE;
 			}
+		}
+		break;
+	case HW_VAR_SET_DRV_ERLY_INT:
+		switch (*val) {
+		#ifdef CONFIG_TDLS
+		#ifdef CONFIG_TDLS_CH_SW
+			case TDLS_BCN_ERLY_ON:
+				padapter->tdlsinfo.chsw_info.bcn_early_reg_bkp = rtw_read8(padapter, REG_DRVERLYINT);
+				rtw_write8(padapter, REG_DRVERLYINT, 20);
+				break;
+			case TDLS_BCN_ERLY_OFF:
+				rtw_write8(padapter, REG_DRVERLYINT, padapter->tdlsinfo.chsw_info.bcn_early_reg_bkp);
+				break;
+		#endif
+		#endif
 		}
 		break;
 	default:
@@ -320,6 +339,9 @@ void rtl8822cu_set_hal_ops(PADAPTER padapter)
 
 	ops->hal_xmit = rtl8822cu_hal_xmit;
 	ops->mgnt_xmit = rtl8822cu_mgnt_xmit;
+#ifdef CONFIG_RTW_MGMT_QUEUE
+	ops->hal_mgmt_xmitframe_enqueue = rtl8822cu_hal_mgmt_xmitframe_enqueue;
+#endif
 	ops->hal_xmitframe_enqueue = rtl8822cu_hal_xmitframe_enqueue;
 
 #ifdef CONFIG_HOSTAPD_MLME

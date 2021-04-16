@@ -36,6 +36,7 @@ const u32 _chip_type_to_odm_ic_type[] = {
 	ODM_RTL8192F,
 	ODM_RTL8822C,
 	ODM_RTL8814B,
+	ODM_RTL8723F,
 	0,
 };
 
@@ -252,6 +253,7 @@ void dump_hal_trx_mode(void *sel, _adapter *adapter)
 {
 	struct registry_priv *regpriv = &adapter->registrypriv;
 	PHAL_DATA_TYPE hal_data = GET_HAL_DATA(adapter);
+	int i;
 
 	RTW_PRINT_SEL(sel, "trx_path_bmp:0x%02x(%s), NumTotalRFPath:%u, max_tx_cnt:%u\n"
 		, hal_data->trx_path_bmp
@@ -261,6 +263,9 @@ void dump_hal_trx_mode(void *sel, _adapter *adapter)
 	);
 	RTW_PRINT_SEL(sel, "tx_nss:%u, rx_nss:%u\n"
 		, hal_data->tx_nss, hal_data->rx_nss);
+	for (i = 0; i < hal_data->tx_nss; i++)
+		RTW_PRINT_SEL(sel, "txpath_cap_num_%uss:%u\n"
+			, i + 1, hal_data->txpath_cap_num_nss[i]);
 	RTW_PRINT_SEL(sel, "\n");
 
 	dump_hal_runtime_trx_mode(sel, adapter);
@@ -369,9 +374,9 @@ void _dump_trx_nss(void *sel, _adapter *adapter)
 	struct registry_priv *regpriv = &adapter->registrypriv;
 	struct hal_spec_t *hal_spec = GET_HAL_SPEC(adapter);
 
-	RTW_PRINT_SEL(sel, "[TRX_Nss] HALSPEC - tx_nss :%d, rx_nss:%d\n", hal_spec->tx_nss_num, hal_spec->rx_nss_num);
-	RTW_PRINT_SEL(sel, "[TRX_Nss] Registry - tx_nss :%d, rx_nss:%d\n", regpriv->tx_nss, regpriv->rx_nss);
-	RTW_PRINT_SEL(sel, "[TRX_Nss] HALDATA - tx_nss :%d, rx_nss:%d\n", GET_HAL_TX_NSS(adapter), GET_HAL_RX_NSS(adapter));
+	RTW_PRINT_SEL(sel, "[TRX_Nss] HALSPEC - tx_nss:%d, rx_nss:%d\n", hal_spec->tx_nss_num, hal_spec->rx_nss_num);
+	RTW_PRINT_SEL(sel, "[TRX_Nss] Registry - tx_nss:%d, rx_nss:%d\n", regpriv->tx_nss, regpriv->rx_nss);
+	RTW_PRINT_SEL(sel, "[TRX_Nss] HALDATA - tx_nss:%d, rx_nss:%d\n", GET_HAL_TX_NSS(adapter), GET_HAL_RX_NSS(adapter));
 
 }
 #define NSS_VALID(nss) (nss > 0)
@@ -382,6 +387,7 @@ u8 rtw_hal_trxnss_init(_adapter *adapter)
 	struct hal_spec_t *hal_spec = GET_HAL_SPEC(adapter);
 	PHAL_DATA_TYPE hal_data = GET_HAL_DATA(adapter);
 	enum rf_type rf_path = GET_HAL_RFPATH(adapter);
+	int i;
 
 	hal_data->tx_nss = hal_spec->tx_nss_num;
 	hal_data->rx_nss = hal_spec->rx_nss_num;
@@ -392,6 +398,23 @@ u8 rtw_hal_trxnss_init(_adapter *adapter)
 	if (NSS_VALID(regpriv->rx_nss))
 		hal_data->rx_nss = rtw_min(hal_data->rx_nss, regpriv->rx_nss);
 	hal_data->rx_nss = rtw_min(hal_data->rx_nss, rf_type_to_rf_rx_cnt(rf_path));
+
+	for (i = 0; i < 4; i++) {
+		if (hal_data->tx_nss < i + 1)
+			break;
+
+		if (IS_HARDWARE_TYPE_8814B(adapter) /* 8814B is always full-TX */
+			#ifdef CONFIG_RTW_TX_NPATH_EN
+			/* these IC is capable of full-TX when macro defined */
+			|| IS_HARDWARE_TYPE_8192E(adapter) || IS_HARDWARE_TYPE_8192F(adapter)
+			|| IS_HARDWARE_TYPE_8812(adapter) || IS_HARDWARE_TYPE_8822B(adapter)
+			|| IS_HARDWARE_TYPE_8822C(adapter)
+			#endif
+		)
+			hal_data->txpath_cap_num_nss[i] = hal_data->max_tx_cnt;
+		else
+			hal_data->txpath_cap_num_nss[i] = i + 1;
+	}
 
 	if (1)
 		_dump_trx_nss(RTW_DBGDUMP, adapter);
@@ -831,6 +854,13 @@ u8	rtw_hal_intf_ps_func(_adapter *padapter, HAL_INTF_PS_FUNC efunc_id, u8 *val)
 	return _FAIL;
 }
 
+#ifdef CONFIG_RTW_MGMT_QUEUE
+s32	rtw_hal_mgmt_xmitframe_enqueue(_adapter *padapter, struct xmit_frame *pxmitframe)
+{
+	return padapter->hal_func.hal_mgmt_xmitframe_enqueue(padapter, pxmitframe);
+}
+#endif
+
 s32	rtw_hal_xmitframe_enqueue(_adapter *padapter, struct xmit_frame *pxmitframe)
 {
 	return padapter->hal_func.hal_xmitframe_enqueue(padapter, pxmitframe);
@@ -846,9 +876,16 @@ s32	rtw_hal_xmit(_adapter *padapter, struct xmit_frame *pxmitframe)
  */
 s32	rtw_hal_mgnt_xmit(_adapter *padapter, struct xmit_frame *pmgntframe)
 {
+#ifdef CONFIG_RTW_MGMT_QUEUE
+	_irqL irqL;
+	struct xmit_priv *pxmitpriv = &(padapter->xmitpriv);
+#endif
 	s32 ret = _FAIL;
 
 	update_mgntframe_attrib_addr(padapter, pmgntframe);
+#ifdef CONFIG_RTW_MGMT_QUEUE
+	update_mgntframe_subtype(padapter, pmgntframe);
+#endif
 
 #if defined(CONFIG_IEEE80211W) || defined(CONFIG_RTW_MESH)
 	if ((!MLME_IS_MESH(padapter) && SEC_IS_BIP_KEY_INSTALLED(&padapter->securitypriv) == _TRUE)
@@ -857,6 +894,23 @@ s32	rtw_hal_mgnt_xmit(_adapter *padapter, struct xmit_frame *pmgntframe)
 		#endif
 	)
 		rtw_mgmt_xmitframe_coalesce(padapter, pmgntframe->pkt, pmgntframe);
+#endif
+
+#ifdef CONFIG_RTW_MGMT_QUEUE
+	if (MLME_IS_AP(padapter) || MLME_IS_MESH(padapter)) {
+		_enter_critical_bh(&pxmitpriv->lock, &irqL);
+		ret = mgmt_xmitframe_enqueue_for_sleeping_sta(padapter, pmgntframe);
+		_exit_critical_bh(&pxmitpriv->lock, &irqL);
+
+		#ifdef DBG_MGMT_QUEUE
+		if (ret == _TRUE)
+			RTW_INFO("%s doesn't be queued, dattrib->ra:"MAC_FMT" seq_num = %u, subtype = 0x%x\n",
+			__func__, MAC_ARG(pmgntframe->attrib.ra), pmgntframe->attrib.seqnum, pmgntframe->attrib.subtype);
+		#endif
+
+		if (ret == RTW_QUEUE_MGMT)
+			return ret;
+	}
 #endif
 
 	ret = padapter->hal_func.mgnt_xmit(padapter, pmgntframe);
@@ -1261,12 +1315,15 @@ s32 c2h_handler(_adapter *adapter, u8 id, u8 seq, u8 plen, u8 *payload)
 
 #if defined(CONFIG_TDLS) && defined(CONFIG_TDLS_CH_SW)
 	case C2H_FW_CHNL_SWITCH_COMPLETE:
+#ifndef CONFIG_TDLS_CH_SW_V2
 		rtw_tdls_chsw_oper_done(adapter);
-		break;
-	case C2H_BCN_EARLY_RPT:
-		rtw_tdls_ch_sw_back_to_base_chnl(adapter);
+#endif
 		break;
 #endif
+
+	case C2H_BCN_EARLY_RPT:
+		rtw_hal_bcn_early_rpt_c2h_handler(adapter);
+		break;
 
 #ifdef CONFIG_MCC_MODE
 	case C2H_MCC:
@@ -1312,7 +1369,9 @@ s32 c2h_handler(_adapter *adapter, u8 id, u8 seq, u8 plen, u8 *payload)
 #endif
 	case C2H_EXTEND:
 		sub_id = payload[0];
+		/* no handle, goto default */
 		/* fall through */
+
 	default:
 		if (phydm_c2H_content_parsing(adapter_to_phydm(adapter), id, plen, payload) != TRUE)
 			ret = _FAIL;
@@ -1906,6 +1965,7 @@ void rtw_hal_update_txpwr_level(_adapter *adapter)
 	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
 
 	rtw_hal_set_tx_power_level(adapter, hal_data->current_channel);
+	rtw_rfctl_update_op_mode(adapter_to_rfctl(adapter), 0, 0);
 }
 
 void rtw_hal_set_txpwr_done(_adapter *adapter)
@@ -1981,14 +2041,6 @@ bool rtw_hal_rfkill_poll(_adapter *adapter, u8 *valid)
 		ret = _FALSE;
 	}
 	return ret;
-}
-#endif
-
-#ifdef CONFIG_SUPPORT_DYNAMIC_TXPWR
-void rtw_hal_dtp_macid_set(_adapter *padapter, u8 opmode, u8 mac_id, u8 *paddr)
-{
-	if (padapter->hal_func.dtp_macid_set)
-		padapter->hal_func.dtp_macid_set(padapter, opmode, mac_id, paddr);
 }
 #endif
 

@@ -62,7 +62,7 @@ static void rtw_dev_shutdown(struct device *dev)
 					#ifdef CONFIG_GPIO_WAKEUP
 					/*default wake up pin change to BT*/
 					RTW_INFO("%s:default wake up pin change to BT\n", __FUNCTION__);
-					rtw_hal_switch_gpio_wl_ctrl(adapter, WAKEUP_GPIO_IDX, _FALSE);
+					rtw_hal_switch_gpio_wl_ctrl(adapter, pwrctl->wowlan_gpio_index, _FALSE);
 					#endif /* CONFIG_GPIO_WAKEUP */
 
 					if (pwrctl->wowlan_mode == _TRUE)
@@ -70,6 +70,10 @@ static void rtw_dev_shutdown(struct device *dev)
 					else
 					#endif
 					{
+						#ifdef CONFIG_BT_COEXIST
+						RTW_INFO("%s call halt notify\n", __FUNCTION__);
+						rtw_btcoex_HaltNotify(adapter);
+						#endif
 						rtw_hal_deinit(adapter);
 						rtw_set_surprise_removed(adapter);
 					}
@@ -260,7 +264,9 @@ static struct usb_device_id rtw_usb_id_tbl[] = {
 	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xC82A, 0xff, 0xff, 0xff), .driver_info = RTL8821C}, /* 8821CU */
 	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xC82B, 0xff, 0xff, 0xff), .driver_info = RTL8821C}, /* 8821CU */
 	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xC811, 0xff, 0xff, 0xff), .driver_info = RTL8821C}, /* 8811CU */
-	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0x8811, 0xff, 0xff, 0xff), .driver_info = RTL8821C}, /* 8811CU */	
+	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0x8811, 0xff, 0xff, 0xff), .driver_info = RTL8821C}, /* 8811CU */
+	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0x8731, 0xff, 0xff, 0xff), .driver_info = RTL8821C}, /* 8731AU */
+	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xC80C, 0xff, 0xff, 0xff), .driver_info = RTL8821C}, /* 8821CUH */
 	/*=== Customer ID ===*/
 #endif
 
@@ -284,6 +290,10 @@ static struct usb_device_id rtw_usb_id_tbl[] = {
 	/*=== Realtek demoboard ===*/
 	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xB814, 0xff, 0xff, 0xff), .driver_info = RTL8814B}, /* Default ID for USB multi-function */
 #endif /* CONFIG_RTL8814B */
+#ifdef CONFIG_RTL8723F
+	/*=== Realtek IC ===*/
+	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xB733, 0xff, 0xff, 0xff), .driver_info = RTL8723F}, 
+#endif
 
 	{}	/* Terminating entry */
 };
@@ -487,6 +497,11 @@ static void rtw_decide_chip_type_by_usb_info(struct dvobj_priv *pdvobjpriv, cons
 	if (pdvobjpriv->chip_type == RTL8814B)
 		rtl8814bu_set_hw_type(pdvobjpriv);
 #endif /* CONFIG_RTL8814B */
+
+#ifdef CONFIG_RTL8723F
+	if (pdvobjpriv->chip_type == RTL8723F)
+		rtl8723fu_set_hw_type(pdvobjpriv);
+#endif /* CONFIG_RTL8723F */
 }
 
 static struct dvobj_priv *usb_dvobj_init(struct usb_interface *usb_intf, const struct usb_device_id *pdid)
@@ -764,6 +779,10 @@ u8 rtw_set_hal_ops(_adapter *padapter)
 		rtl8814bu_set_hal_ops(padapter);
 #endif /* CONFIG_RTL8814B */
 
+#ifdef CONFIG_RTL8723F
+	if (rtw_get_chip_type(padapter) == RTL8723F)
+		rtl8723fu_set_hal_ops(padapter);
+#endif /* CONFIG_RTL8723F */
 
 	if (_FAIL == rtw_hal_ops_check(padapter))
 		return _FAIL;
@@ -1416,6 +1435,10 @@ static int __init rtw_drv_entry(void)
 	usb_drv.drv_registered = _TRUE;
 	rtw_suspend_lock_init();
 	rtw_drv_proc_init();
+	rtw_nlrtw_init();
+#ifdef CONFIG_PLATFORM_CMAP_INTFS
+	cmap_intfs_init();
+#endif
 	rtw_ndev_notifier_register();
 	rtw_inetaddr_notifier_register();
 
@@ -1425,6 +1448,10 @@ static int __init rtw_drv_entry(void)
 		usb_drv.drv_registered = _FALSE;
 		rtw_suspend_lock_uninit();
 		rtw_drv_proc_deinit();
+		rtw_nlrtw_deinit();
+#ifdef CONFIG_PLATFORM_CMAP_INTFS
+		cmap_intfs_deinit();
+#endif
 		rtw_ndev_notifier_unregister();
 		rtw_inetaddr_notifier_unregister();
 		goto exit;
@@ -1447,6 +1474,10 @@ static void __exit rtw_drv_halt(void)
 
 	rtw_suspend_lock_uninit();
 	rtw_drv_proc_deinit();
+	rtw_nlrtw_deinit();
+#ifdef CONFIG_PLATFORM_CMAP_INTFS
+	cmap_intfs_deinit();
+#endif
 	rtw_ndev_notifier_unregister();
 	rtw_inetaddr_notifier_unregister();
 

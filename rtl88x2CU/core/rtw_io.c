@@ -62,6 +62,9 @@ jackson@realtek.com.tw
 
 u8 _rtw_read8(_adapter *adapter, u32 addr)
 {
+	if (adapter == NULL)
+		RTW_INFO("Adapter pointer is NULL!\n");
+
 	u8 r_val;
 	/* struct	io_queue  	*pio_queue = (struct io_queue *)adapter->pio_queue; */
 	struct io_priv *pio_priv = &adapter->iopriv;
@@ -75,6 +78,9 @@ u8 _rtw_read8(_adapter *adapter, u32 addr)
 
 u16 _rtw_read16(_adapter *adapter, u32 addr)
 {
+	if (adapter == NULL)
+		RTW_INFO("Adapter pointer is NULL!\n");
+
 	u16 r_val;
 	/* struct	io_queue  	*pio_queue = (struct io_queue *)adapter->pio_queue; */
 	struct io_priv *pio_priv = &adapter->iopriv;
@@ -88,6 +94,9 @@ u16 _rtw_read16(_adapter *adapter, u32 addr)
 
 u32 _rtw_read32(_adapter *adapter, u32 addr)
 {
+	if (adapter == NULL)
+		RTW_INFO("Adapter pointer is NULL!\n");
+
 	u32 r_val;
 	/* struct	io_queue  	*pio_queue = (struct io_queue *)adapter->pio_queue; */
 	struct io_priv *pio_priv = &adapter->iopriv;
@@ -102,6 +111,9 @@ u32 _rtw_read32(_adapter *adapter, u32 addr)
 
 int _rtw_write8(_adapter *adapter, u32 addr, u8 val)
 {
+	if (adapter == NULL)
+		RTW_INFO("Adapter pointer is NULL!\n");
+
 	/* struct	io_queue  	*pio_queue = (struct io_queue *)adapter->pio_queue; */
 	struct io_priv *pio_priv = &adapter->iopriv;
 	struct	intf_hdl		*pintfhdl = &(pio_priv->intf);
@@ -115,6 +127,9 @@ int _rtw_write8(_adapter *adapter, u32 addr, u8 val)
 }
 int _rtw_write16(_adapter *adapter, u32 addr, u16 val)
 {
+	if (adapter == NULL)
+		RTW_INFO("Adapter pointer is NULL!\n");
+
 	/* struct	io_queue  	*pio_queue = (struct io_queue *)adapter->pio_queue; */
 	struct io_priv *pio_priv = &adapter->iopriv;
 	struct	intf_hdl		*pintfhdl = &(pio_priv->intf);
@@ -129,6 +144,9 @@ int _rtw_write16(_adapter *adapter, u32 addr, u16 val)
 }
 int _rtw_write32(_adapter *adapter, u32 addr, u32 val)
 {
+	if (adapter == NULL)
+		RTW_INFO("Adapter pointer is NULL!\n");
+
 	/* struct	io_queue  	*pio_queue = (struct io_queue *)adapter->pio_queue; */
 	struct io_priv *pio_priv = &adapter->iopriv;
 	struct	intf_hdl		*pintfhdl = &(pio_priv->intf);
@@ -144,6 +162,9 @@ int _rtw_write32(_adapter *adapter, u32 addr, u32 val)
 
 int _rtw_writeN(_adapter *adapter, u32 addr , u32 length , u8 *pdata)
 {
+	if (adapter == NULL)
+		RTW_INFO("Adapter pointer is NULL!\n");
+
 	/* struct	io_queue  	*pio_queue = (struct io_queue *)adapter->pio_queue; */
 	struct io_priv *pio_priv = &adapter->iopriv;
 	struct	intf_hdl	*pintfhdl = (struct intf_hdl *)(&(pio_priv->intf));

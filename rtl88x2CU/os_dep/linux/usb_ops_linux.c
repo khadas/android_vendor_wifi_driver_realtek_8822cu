@@ -78,8 +78,6 @@ int usbctrl_vendorreq(struct intf_hdl *pintfhdl, u8 request, u16 value, u16 inde
 	#ifdef CONFIG_USB_VENDOR_REQ_BUFFER_DYNAMIC_ALLOCATE
 	tmp_buf = rtw_malloc((u32) len + ALIGNMENT_UNIT);
 	tmp_buflen = (u32)len + ALIGNMENT_UNIT;
-	#else /* use stack memory */
-	tmp_buflen = MAX_USB_IO_CTL_SIZE;
 	#endif
 
 	/* Added by Albert 2010/02/09 */

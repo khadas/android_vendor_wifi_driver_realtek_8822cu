@@ -1762,7 +1762,7 @@ void rtw_btc_set_ant_path(struct btc_coexist *btc, boolean force_exec,
 			if ((!is_btk && !is_wlk) || scbd == 0x7ff)
 				break;
 
-			delay_ms(10);
+			ODM_delay_ms(10);
 			BTC_SPRINTF(trace_buf, BT_TMP_BUF_SIZE,
 				    "[BTCoex], Ant Setup Delay by IQK\n, wlk=%d, btk=%d, cnt=%d\n",
 				    is_wlk, is_btk, cnt);

@@ -976,7 +976,7 @@ err:
 }
 
 int rtw_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher,
-	int *pairwise_cipher, int *gmcs, u32 *akm, u8 *mfp_opt)
+	int *pairwise_cipher, int *gmcs, u32 *akm, u8 *mfp_opt, u8 *spp_opt)
 {
 	struct rsne_info info;
 	int i, ret = _SUCCESS;
@@ -1019,6 +1019,12 @@ int rtw_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher,
 		*mfp_opt = MFP_NO;
 		if (info.cap)
 			*mfp_opt = GET_RSN_CAP_MFP_OPTION(info.cap);
+	}
+
+	if (spp_opt) {
+		*spp_opt = 0;
+		if (info.cap)
+			*spp_opt = GET_RSN_CAP_SPP_OPT(info.cap);
 	}
 
 exit:
@@ -3157,5 +3163,50 @@ const char *action_public_str(u8 action)
 {
 	action = (action >= ACT_PUBLIC_MAX) ? ACT_PUBLIC_MAX : action;
 	return _action_public_str[action];
+}
+
+/*tmp for sta mode, root cause have to wait supplicant's update.*/
+void rtw_set_spp_amsdu_mode(u8 mode, u8 *rsn_ie, int rsn_ie_len)
+{
+	struct rsne_info info;
+	int i, ret = _SUCCESS;
+	u8 spp_req_cap = 0;
+
+	if (mode == RTW_AMSDU_MODE_NON_SPP ) {
+		spp_req_cap = (u8)(~SPP_CAP | ~SPP_REQ);
+	} else if (mode == RTW_AMSDU_MODE_SPP) {
+		spp_req_cap = (u8)(SPP_CAP | SPP_REQ);
+	} else if (mode == RTW_AMSDU_MODE_ALL_DROP) {
+		spp_req_cap = (u8)(~SPP_CAP | SPP_REQ);
+	} else {
+		RTW_INFO("%s unexpected mode = %d, please check the config\n", __func__, mode);
+		return;
+	}
+
+	ret = rtw_rsne_info_parse(rsn_ie, rsn_ie_len, &info);
+	if (ret != _SUCCESS)
+		return;
+
+	SET_RSN_CAP_SPP(info.cap, spp_req_cap);
+	RTW_INFO("%s set spp opt = %d\n", __func__, GET_RSN_CAP_SPP_OPT(info.cap));
+}
+
+u8 rtw_check_amsdu_disable(u8 mode, u8 spp_opt)
+{
+	u8 ret = _FALSE;
+	RTW_INFO("%s spp_opt=%u \n", __func__, spp_opt);
+
+	/* pp amsdu: peer's required has to be 0, or disable */
+	if ((mode == RTW_AMSDU_MODE_NON_SPP) && (spp_opt & SPP_REQ))
+		ret = _TRUE;
+	/* spp amsdu: peer's cap has to be 1, or disable */
+	else if ((mode == RTW_AMSDU_MODE_SPP) && ~(spp_opt & SPP_CAP))
+		ret = _TRUE;
+	/* mode = all drop */
+	else if (mode == RTW_AMSDU_MODE_ALL_DROP)
+		ret = _TRUE;
+	else
+		ret = _FALSE;
+	return ret;
 }
 

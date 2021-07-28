@@ -19,8 +19,6 @@
 
 static u8 *trace_buf = &gl_btc_trace_buf[0];
 
-static const u32 bt_desired_ver_8822c = 0x1c;
-
 /* rssi express in percentage % (dbm = % - 100)  */
 static const u8 wl_rssi_step_8822c[] = {60, 50, 44, 30};
 static const u8 bt_rssi_step_8822c[] = {8, 15, 20, 25};
@@ -60,7 +58,8 @@ static const struct btc_coex_table_para table_sant_8822c[] = {
 				{0x66556aaa, 0x6a5a6aaa}, /*case-30*/
 				{0xffffffff, 0x5aaa5aaa},
 				{0x56555555, 0x5a5a5aaa},
-				{0xdaffdaff, 0xdaffdaff} };
+				{0xdaffdaff, 0xdaffdaff},
+				{0x6a555a5a, 0x5a5a5a5a} };
 
 /* Non-Shared-Antenna Coex Table */
 static const struct btc_coex_table_para table_nsant_8822c[] = {
@@ -211,9 +210,10 @@ const struct btc_5g_afh_map afh_5g_8822c[] = { {0, 0, 0} };
 
 const struct btc_chip_para btc_chip_para_8822c = {
 	"8822c",				/*.chip_name */
-	20200914,				/*.para_ver_date */
-	0x1e,					/*.para_ver */
-	0x1c,					/* bt_desired_ver */
+	20210504,				/*.para_ver_date */
+	0x23,					/*.para_ver */
+	0x20,					/* bt_desired_ver */
+	0x70012,				/* wl_desired_ver */
 	TRUE,					/* scbd_support */
 	0xaa,					/* scbd_reg*/
 	BTC_SCBD_16_BIT,			/* scbd_bit_num */

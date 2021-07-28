@@ -298,6 +298,7 @@ void rtw_txpwr_init_regd(struct rf_ctl_t *rfctl)
 		);
 		if (rfctl->regd_name)
 			break;
+		fallthrough;
 		/* fall through */
 	default:
 		rfctl->regd_name = regd_str(TXPWR_LMT_WW);
@@ -1665,7 +1666,8 @@ void mgt_dispatcher(_adapter *padapter, union recv_frame *precv_frame)
 			ptable->func = &OnAuth;
 		else
 			ptable->func = &OnAuthClient;
-	/* fall through */
+		fallthrough;
+		/* fall through */
 	case WIFI_ASSOCREQ:
 	case WIFI_REASSOCREQ:
 		_mgt_dispatcher(padapter, ptable, precv_frame);
@@ -1778,13 +1780,15 @@ unsigned int OnProbeReq(_adapter *padapter, union recv_frame *precv_frame)
 	u8 wifi_test_chk_rate = 1;
 
 #ifdef CONFIG_IOCTL_CFG80211
-	if ((pwdinfo->driver_interface == DRIVER_CFG80211)
-	    && !rtw_p2p_chk_state(pwdinfo, P2P_STATE_NONE)
-	    && (GET_CFG80211_REPORT_MGMT(adapter_wdev_data(padapter), IEEE80211_STYPE_PROBE_REQ) == _TRUE)
-	) {
+#ifdef CONFIG_P2P
+	if ((adapter_to_dvobj(padapter)->wpas_type == RTW_WPAS_W1FI) &&
+		!rtw_p2p_chk_state(pwdinfo, P2P_STATE_NONE) &&
+		(GET_CFG80211_REPORT_MGMT(adapter_wdev_data(padapter),
+				IEEE80211_STYPE_PROBE_REQ) == _TRUE)) {
 		rtw_cfg80211_rx_probe_request(padapter, precv_frame);
 		return _SUCCESS;
 	}
+#endif
 #endif /* CONFIG_IOCTL_CFG80211 */
 
 	if (!rtw_p2p_chk_state(pwdinfo, P2P_STATE_NONE) &&
@@ -3716,6 +3720,7 @@ unsigned int on_action_wnm(_adapter *adapter, union recv_frame *rframe)
 			if ((sz > 0) && (rsp.pcandidates != NULL))
 				rtw_mfree(rsp.pcandidates, sz);
 		}
+		fallthrough;
 		 /* fall through */
 	default:
 		#ifdef CONFIG_IOCTL_CFG80211
@@ -9076,6 +9081,9 @@ void issue_asocrsp(_adapter *padapter, unsigned short status, struct sta_info *p
 			if (pmlmepriv->p2p_assoc_resp_ie && pmlmepriv->p2p_assoc_resp_ie_len > 0) {
 				len = pmlmepriv->p2p_assoc_resp_ie_len;
 				_rtw_memcpy(pframe, pmlmepriv->p2p_assoc_resp_ie, len);
+			} else if (pmlmepriv->assoc_rsp && pmlmepriv->assoc_rsp_len > 0) {
+				len = pmlmepriv->assoc_rsp_len;
+				_rtw_memcpy(pframe, pmlmepriv->assoc_rsp, len);
 			}
 		} else
 			len = build_assoc_resp_p2p_ie(pwdinfo, pframe, pstat->p2p_status_code);
@@ -9391,6 +9399,8 @@ void _issue_assocreq(_adapter *padapter, u8 is_reassoc)
 #endif /* CONFIG_IOCTL_CFG80211 */
 
 				pframe = rtw_set_ie(pframe, EID_WPA2, pIE->Length, pIE->data, &(pattrib->pktlen));
+				/* tmp: update rsn's spp related opt. */
+				rtw_set_spp_amsdu_mode(padapter->registrypriv.amsdu_mode, pframe - (pIE->Length + 2), pIE->Length +2);
 			}
 			break;
 #ifdef CONFIG_80211N_HT
@@ -10318,6 +10328,12 @@ static int issue_action_ba(_adapter *padapter, unsigned char *raddr, unsigned ch
 			else /* TX AMSDU disabled */
 				BA_para_set &= ~BIT(0);
 #endif
+			psta = rtw_get_stainfo(pstapriv, raddr);
+			if (psta != NULL) {
+				if (psta->flags & WLAN_STA_AMSDU_DISABLE)
+					BA_para_set &= ~BIT(0);
+			}
+
 			BA_para_set = cpu_to_le16(BA_para_set);
 			pframe = rtw_set_fixed_ie(pframe, 2, (unsigned char *)(&(BA_para_set)), &(pattrib->pktlen));
 
@@ -10360,6 +10376,12 @@ static int issue_action_ba(_adapter *padapter, unsigned char *raddr, unsigned ch
 					BA_para_set &= ~BIT(0);
 				else if (pregpriv->rx_ampdu_amsdu == 1) /* enabled */
 					BA_para_set |= BIT(0);
+			}
+
+			psta = rtw_get_stainfo(pstapriv, raddr);
+			if (psta != NULL) {
+				if (psta->flags & WLAN_STA_AMSDU_DISABLE)
+					BA_para_set &= ~BIT(0);
 			}
 
 			BA_para_set = cpu_to_le16(BA_para_set);
@@ -15097,6 +15119,19 @@ u8 setauth_hdl(_adapter *padapter, unsigned char *pbuf)
 	return	H2C_SUCCESS;
 }
 
+static u8 amsdu_spp_enable(_adapter *pdapter, enum security_type type)
+{
+	u8 ret = _FALSE;
+
+	if (pdapter->registrypriv.amsdu_mode == RTW_AMSDU_MODE_SPP) {
+		if ( type == _AES_ || type == _CCMP_256_
+			|| type == _GCMP_ || type == _GCMP_256_ )
+			ret = _SUCCESS;
+	}
+
+	return ret;
+}
+
 /*
 SEC CAM Entry format (32 bytes)
 DW0 - MAC_ADDR[15:0] | Valid[15] | MFB[14:8] | RSVD[7]  | GK[6] | MIC_KEY[5] | SEC_TYPE[4:2] | KID[1:0]
@@ -15188,8 +15223,9 @@ u8 setkey_hdl(_adapter *padapter, u8 *pbuf)
 	if (pparm->algorithm & _SEC_TYPE_256_)  {
 		RTW_INFO_DUMP("GTK : ", pparm->key, sizeof(pparm->key));
 		ctrl |= BIT(9);
-	}	
-
+	}
+	if (amsdu_spp_enable(padapter, pparm->algorithm) == _SUCCESS)
+		ctrl |= BIT(7);
 	write_cam(padapter, cam_id, ctrl, addr, pparm->key);
 
 	/* if ((cam_id > 3) && (((pmlmeinfo->state&0x03) == WIFI_FW_AP_STATE) || ((pmlmeinfo->state&0x03) == WIFI_FW_ADHOC_STATE)))*/
@@ -15337,7 +15373,12 @@ write_to_cam:
 			ctrl |= BIT(9);
 		}
 
+		if (amsdu_spp_enable(padapter, pparm->algorithm) == _SUCCESS)
+			ctrl |= BIT(7);
+
 		write_cam(padapter, cam_id, ctrl, pparm->addr, pparm->key);
+		if (!(pparm->gk))
+			ATOMIC_INC(&psta->keytrack);	/*CVE-2020-24587*/
 	}
 	ret = H2C_SUCCESS_RSP;
 

@@ -3395,7 +3395,7 @@ void halrf_txgapk_trigger(void *dm_void)
 
 #if (RTL8822C_SUPPORT == 1)
 	case ODM_RTL8822C:
-		halrf_txgapk_8822c(dm);
+		//halrf_txgapk_8822c(dm);
 	break;
 #endif
 
@@ -3818,8 +3818,8 @@ void halrf_txgapk_write_gain_table(void *dm_void)
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
 
 #if (RTL8822C_SUPPORT == 1)
-	if (dm->support_ic_type & ODM_RTL8822C)
-		halrf_txgapk_save_all_tx_gain_table_8822c(dm);
+	//if (dm->support_ic_type & ODM_RTL8822C)
+	//	halrf_txgapk_save_all_tx_gain_table_8822c(dm);
 #endif
 }
 
@@ -3828,8 +3828,8 @@ void halrf_txgapk_reload_tx_gain(void *dm_void)
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
 
 #if (RTL8822C_SUPPORT == 1)
-	if (dm->support_ic_type & ODM_RTL8822C)
-		halrf_txgapk_reload_tx_gain_8822c(dm);
+	//if (dm->support_ic_type & ODM_RTL8822C)
+	//	halrf_txgapk_reload_tx_gain_8822c(dm);
 #endif
 }
 

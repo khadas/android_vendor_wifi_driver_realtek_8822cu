@@ -689,6 +689,10 @@ module_param(rtw_dfs_region_domain, uint, 0644);
 MODULE_PARM_DESC(rtw_dfs_region_domain, "0:NONE, 1:FCC, 2:MKK, 3:ETSI");
 #endif
 
+uint rtw_amsdu_mode = RTW_AMSDU_MODE;
+module_param(rtw_amsdu_mode, uint, 0644);
+MODULE_PARM_DESC(rtw_amsdu_mode, "0:non-spp, 1:spp, 2:all drop");
+
 uint rtw_amplifier_type_2g = CONFIG_RTW_AMPLIFIER_TYPE_2G;
 module_param(rtw_amplifier_type_2g, uint, 0644);
 MODULE_PARM_DESC(rtw_amplifier_type_2g, "BIT3:2G ext-PA, BIT4:2G ext-LNA");
@@ -823,6 +827,15 @@ MODULE_PARM_DESC(rtw_tsf_update_pause_factor, "num of bcn intervals to stay TSF 
 int rtw_tsf_update_restore_factor = CONFIG_TSF_UPDATE_RESTORE_FACTOR;
 module_param(rtw_tsf_update_restore_factor, int, 0644);
 MODULE_PARM_DESC(rtw_tsf_update_restore_factor, "num of bcn intervals to stay TSF update restore status");
+
+
+#ifdef CONFIG_RTW_NBI
+static int rtw_nbi_en = 1;
+#else
+static int rtw_nbi_en = 0;
+#endif
+module_param(rtw_nbi_en, int, 0644);
+MODULE_PARM_DESC(rtw_nbi_en, "0:Disable, 1:Enable Narrow Band Interference");
 
 #ifdef CONFIG_LOAD_PHY_PARA_FROM_FILE
 char *rtw_phy_file_path = REALTEK_CONFIG_PATH;
@@ -1460,6 +1473,8 @@ uint loadparam(_adapter *padapter)
 	#endif
 #endif
 
+	registry_par->amsdu_mode = (u8)rtw_amsdu_mode;
+
 #ifdef CONFIG_MCC_MODE
 	registry_par->en_mcc = (u8)rtw_en_mcc;
 	registry_par->rtw_mcc_ap_bw20_target_tx_tp = (u32)rtw_mcc_ap_bw20_target_tx_tp;
@@ -1561,6 +1576,8 @@ uint loadparam(_adapter *padapter)
 #ifdef CONFIG_RTW_MULTI_AP
 	rtw_regsty_init_unassoc_sta_param(registry_par);
 #endif
+
+	registry_par->nbi_en = (u8)rtw_nbi_en;
 
 	return status;
 }
@@ -2657,6 +2674,9 @@ struct dvobj_priv *devobj_init(void)
 	pdvobj->edca_be_dl = 0x00a42b;
 #endif 
 	pdvobj->scan_deny = _FALSE;
+
+	/* wpas type default from w1.fi */
+	pdvobj->wpas_type = RTW_WPAS_W1FI;
 
 	return pdvobj;
 

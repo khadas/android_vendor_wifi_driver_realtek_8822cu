@@ -560,5 +560,8 @@ extern struct net_device *rtw_alloc_etherdev(int sizeof_priv);
 
 #define STRUCT_PACKED __attribute__ ((packed))
 
+#ifndef fallthrough
+#define fallthrough do {} while (0)
+#endif
 
 #endif /* __OSDEP_LINUX_SERVICE_H_ */

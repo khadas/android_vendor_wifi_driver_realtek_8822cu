@@ -238,6 +238,7 @@ s32 init_mp_priv(PADAPTER padapter)
 	pmppriv->pktLength = 1000;
 	pmppriv->bprocess_mp_mode = _FALSE;
 	pmppriv->efuse_update_file= _FALSE;
+	pmppriv->efuse_update_on = _FALSE;
 
 	mp_init_xmit_attrib(&pmppriv->tx, padapter);
 
@@ -1016,6 +1017,8 @@ void mp_stop_test(PADAPTER padapter)
 	struct mp_priv *pmppriv = &padapter->mppriv;
 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
 	struct wlan_network *tgt_network = &pmlmepriv->cur_network;
+	struct mlme_ext_priv    *pmlmeext = &padapter->mlmeextpriv;
+	struct mlme_ext_info    *pmlmeinfo = &pmlmeext->mlmext_info;
 	struct sta_info *psta;
 #ifdef CONFIG_PCI_HCI
 	struct registry_priv  *registry_par = &padapter->registrypriv;
@@ -1047,6 +1050,8 @@ void mp_stop_test(PADAPTER padapter)
 		_rtw_memset(tgt_network, 0, sizeof(struct wlan_network));
 
 		_clr_fwstate_(pmlmepriv, WIFI_MP_STATE);
+
+		pmlmeinfo->state = WIFI_FW_NULL_STATE;
 
 end_of_mp_stop_test:
 

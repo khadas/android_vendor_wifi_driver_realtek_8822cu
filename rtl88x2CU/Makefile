@@ -7,23 +7,17 @@ EXTRA_CFLAGS += -O1
 #EXTRA_CFLAGS += -pedantic
 #EXTRA_CFLAGS += -Wshadow -Wpointer-arith -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
 
-#EXTRA_CFLAGS += -Wno-unused-variable
+EXTRA_CFLAGS += -Wno-unused-variable
 #EXTRA_CFLAGS += -Wno-unused-value
 #EXTRA_CFLAGS += -Wno-unused-label
 #EXTRA_CFLAGS += -Wno-unused-parameter
 #EXTRA_CFLAGS += -Wno-unused-function
-EXTRA_CFLAGS += -Wno-unused
+#EXTRA_CFLAGS += -Wno-unused
 #EXTRA_CFLAGS += -Wno-uninitialized
 
 GCC_VER_49 := $(shell echo `$(CC) -dumpversion | cut -f1-2 -d.` \>= 4.9 | bc )
 ifeq ($(GCC_VER_49),1)
 EXTRA_CFLAGS += -Wno-date-time	# Fix compile error && warning on gcc 4.9 and later
-endif
-
-GCC_VER_70 := $(shell echo `$(CC) -dumpversion | cut -f1-2 -d.` \>= 7.0 | bc )
-ifeq ($(GCC_VER_70),1)
-# fix ISO C90 forbids variable length array & -Werror=implicit-fallthrough on gcc 7.0
-EXTRA_CFLAGS += -Wno-implicit-fallthrough -Wno-vla
 endif
 
 EXTRA_CFLAGS += -I$(src)/include
@@ -60,7 +54,7 @@ CONFIG_GSPI_HCI = n
 CONFIG_AP_MODE = y
 CONFIG_P2P = y
 CONFIG_MP_INCLUDED = y
-CONFIG_POWER_SAVING = n
+CONFIG_POWER_SAVING = y
 CONFIG_IPS_MODE = default
 CONFIG_LPS_MODE = default
 CONFIG_USB_AUTOSUSPEND = n
@@ -96,7 +90,9 @@ CONFIG_IP_R_MONITOR = n #arp VOQ and high rate
 # user priority mapping rule : tos, dscp
 CONFIG_RTW_UP_MAPPING_RULE = tos
 CONFIG_RTW_MBO = n
-
+CONFIG_RTW_NBI = n
+# AMSDU in security network
+CONFIG_SEC_AMSDU_MODE = non-spp
 ########################## Android ###########################
 # CONFIG_RTW_ANDROID - 0: no Android, 4/5/6/7/8/9/10/11 : Android version
 CONFIG_RTW_ANDROID = 0
@@ -109,7 +105,7 @@ endif
 CONFIG_RTW_DEBUG = y
 # default log level is _DRV_INFO_ = 4,
 # please refer to "How_to_set_driver_debug_log_level.doc" to set the available level.
-CONFIG_RTW_LOG_LEVEL = 3
+CONFIG_RTW_LOG_LEVEL = 4
 
 # enable /proc/net/rtlxxxx/ debug interfaces
 CONFIG_PROC_DEBUG = y
@@ -142,7 +138,7 @@ CONFIG_LAYER2_ROAMING = y
 #bit0: ROAM_ON_EXPIRED, #bit1: ROAM_ON_RESUME, #bit2: ROAM_ACTIVE
 CONFIG_ROAMING_FLAG = 0x3
 ###################### Platform Related #######################
-CONFIG_PLATFORM_I386_PC = n
+CONFIG_PLATFORM_I386_PC = y
 CONFIG_PLATFORM_ANDROID_X86 = n
 CONFIG_PLATFORM_ANDROID_INTEL_X86 = n
 CONFIG_PLATFORM_JB_X86 = n
@@ -202,7 +198,7 @@ CONFIG_PLATFORM_HISILICON_HI3798 = n
 CONFIG_PLATFORM_NV_TK1 = n
 CONFIG_PLATFORM_NV_TK1_UBUNTU = n
 CONFIG_PLATFORM_RTL8197D = n
-CONFIG_PLATFORM_AML_S905 = y
+CONFIG_PLATFORM_AML_S905 = n
 CONFIG_PLATFORM_ZTE_ZX296716 = n
 ########### CUSTOMER ################################
 CONFIG_CUSTOMER_HUAWEI_GENERAL = n
@@ -1336,6 +1332,18 @@ EXTRA_CFLAGS += -DCONFIG_RTW_MBO -DCONFIG_RTW_80211K -DCONFIG_RTW_WNM -DCONFIG_R
 EXTRA_CFLAGS += -DCONFIG_RTW_80211R
 endif
 
+ifeq ($(CONFIG_RTW_NBI), y)
+EXTRA_CFLAGS += -DCONFIG_RTW_NBI
+endif
+
+ifeq ($(CONFIG_SEC_AMSDU_MODE), non-spp)
+EXTRA_CFLAGS += -DRTW_AMSDU_MODE=0
+else ifeq ($(CONFIG_SEC_AMSDU_MODE), spp)
+EXTRA_CFLAGS += -DRTW_AMSDU_MODE=1
+else ifeq ($(CONFIG_SEC_AMSDU_MODE), disable)
+EXTRA_CFLAGS += -DRTW_AMSDU_MODE=2
+endif
+
 ifeq ($(CONFIG_PLATFORM_I386_PC), y)
 EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
 EXTRA_CFLAGS += -DCONFIG_IOCTL_CFG80211 -DRTW_USE_CFG80211_STA_EVENT
@@ -2250,11 +2258,9 @@ endif
 ARCH ?= arm64
 CROSS_COMPILE ?= /4.4_S905L_8822bs_compile/gcc-linaro-aarch64-linux-gnu-4.9-2014.09_linux/bin/aarch64-linux-gnu-
 ifndef KSRC
-EXTRA_CFLAGS += -w
-KSRC := $(KERNEL_SRC)
-EXTRA_CFLAGS += $(foreach d,$(shell find $(shell cd $(KERNEL_SRC)/$(M);pwd) -type d),$(shell echo " -I$(d)"))
+KSRC := /4.4_S905L_8822bs_compile/common
 # To locate output files in a separate directory.
-#KSRC += O=/4.4_S905L_8822bs_compile/KERNEL_OBJ
+KSRC += O=/4.4_S905L_8822bs_compile/KERNEL_OBJ
 endif
 
 ifeq ($(CONFIG_RTL8822B), y)
@@ -2446,21 +2452,16 @@ ifeq ($(CONFIG_RTL8723B), y)
 $(MODULE_NAME)-$(CONFIG_MP_INCLUDED)+= core/rtw_bt_mp.o
 endif
 
-obj-m := $(MODULE_NAME).o
+obj-$(CONFIG_RTL8822CU) := $(MODULE_NAME).o
 
 else
 
 export CONFIG_RTL8822CU = m
-M ?= $(shell pwd)
 
 all: modules
 
 modules:
-	@echo cross_comple = $(CROSS_COMPILE)
-	@echo CFLAGS = $(CFLAGS)
-	@echo EXTRA_CFLAGS = $(EXTRA_CFLAGS)
-	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KSRC) M=$(M) modules -j
-	$(CROSS_COMPILE)strip --strip-unneeded ${OUT_DIR}/$(M)/$(MODULE_NAME).ko
+	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KSRC) M=$(shell pwd)  modules
 
 strip:
 	$(CROSS_COMPILE)strip $(MODULE_NAME).ko --strip-unneeded
@@ -2472,11 +2473,6 @@ install:
 uninstall:
 	rm -f $(MODDESTDIR)/$(MODULE_NAME).ko
 	/sbin/depmod -a ${KVER}
-
-modules_install:
-	@$(MAKE) INSTALL_MOD_STRIP=1 M=$(M) -C $(KSRC) modules_install
-	mkdir -p ${OUT_DIR}/../vendor_lib/modules
-	cd ${OUT_DIR}/$(M)/; find -name $(MODULE_NAME).ko -exec cp {} ${OUT_DIR}/../vendor_lib/modules/$(MODULE_NAME).ko \;
 
 backup_rtlwifi:
 	@echo "Making backup rtlwifi drivers"
@@ -2520,7 +2516,7 @@ config_r:
 .PHONY: modules clean
 
 clean:
-	#$(MAKE) -C $(KSRC) M=$(M) clean
+	#$(MAKE) -C $(KSRC) M=$(shell pwd) clean
 	cd hal ; rm -fr */*/*/*.mod.c */*/*/*.mod */*/*/*.o */*/*/.*.cmd */*/*/*.ko
 	cd hal ; rm -fr */*/*.mod.c */*/*.mod */*/*.o */*/.*.cmd */*/*.ko
 	cd hal ; rm -fr */*.mod.c */*.mod */*.o */.*.cmd */*.ko

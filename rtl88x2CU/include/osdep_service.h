@@ -47,6 +47,9 @@
 
 #ifdef PLATFORM_LINUX
 	#include <linux/version.h>
+#if defined(CONFIG_RTW_ANDROID_GKI)
+	#include <linux/firmware.h>
+#endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0))
 	#include <linux/sched/signal.h>
 	#include <linux/sched/types.h>
@@ -709,12 +712,14 @@ extern int ATOMIC_DEC_RETURN(ATOMIC_T *v);
 extern bool ATOMIC_INC_UNLESS(ATOMIC_T *v, int u);
 
 /* File operation APIs, just for linux now */
+#if !defined(CONFIG_RTW_ANDROID_GKI)
 extern int rtw_is_dir_readable(const char *path);
+extern int rtw_store_to_file(const char *path, u8 *buf, u32 sz);
+#endif /* !defined(CONFIG_RTW_ANDROID_GKI) */
 extern int rtw_is_file_readable(const char *path);
 extern int rtw_is_file_readable_with_size(const char *path, u32 *sz);
 extern int rtw_readable_file_sz_chk(const char *path, u32 sz);
 extern int rtw_retrieve_from_file(const char *path, u8 *buf, u32 sz);
-extern int rtw_store_to_file(const char *path, u8 *buf, u32 sz);
 
 
 #ifndef PLATFORM_FREEBSD

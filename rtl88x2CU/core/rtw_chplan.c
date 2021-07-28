@@ -2438,6 +2438,29 @@ void dump_country_chplan_map(void *sel)
 	}
 }
 
+void dump_country_list(void *sel)
+{
+	const struct country_chplan *ent;
+	u8 code[2];
+	u8 first = 1;
+
+	for (code[0] = 'A'; code[0] <= 'Z'; code[0]++) {
+		for (code[1] = 'A'; code[1] <= 'Z'; code[1]++) {
+			ent = rtw_get_chplan_from_country(code);
+			if (!ent)
+				continue;
+
+			if (first) {
+				RTW_PRINT_SEL(sel, "%c%c ", code[0], code[1]);
+				first = 0;
+			} else
+				_RTW_PRINT_SEL(sel, "%c%c ", code[0], code[1]);
+		}
+	}
+	if (first == 0)
+		_RTW_PRINT_SEL(sel, "\n");
+}
+
 void dump_chplan_id_list(void *sel)
 {
 	u8 first = 1;
@@ -2452,6 +2475,39 @@ void dump_chplan_id_list(void *sel)
 			first = 0;
 		} else
 			_RTW_PRINT_SEL(sel, "0x%02X ", i);
+	}
+	if (first == 0)
+		_RTW_PRINT_SEL(sel, "\n");
+}
+
+void dump_chplan_country_list(void *sel)
+{
+	int i;
+
+	for (i = 0; i < RTW_ChannelPlanMap_size; i++) {
+		const struct country_chplan *ent;
+		u8 code[2];
+		u8 first;
+
+		if (!rtw_is_channel_plan_valid(i))
+			continue;
+
+		first = 1;
+		for (code[0] = 'A'; code[0] <= 'Z'; code[0]++) {
+			for (code[1] = 'A'; code[1] <= 'Z'; code[1]++) {
+				ent = rtw_get_chplan_from_country(code);
+				if (!ent || ent->chplan != i)
+					continue;
+
+				if (first) {
+					RTW_PRINT_SEL(sel, "0x%02X %c%c ", i, code[0], code[1]);
+					first = 0;
+				} else
+					_RTW_PRINT_SEL(sel, "%c%c ", code[0], code[1]);
+			}
+		}
+		if (first == 0)
+			_RTW_PRINT_SEL(sel, "\n");
 	}
 }
 

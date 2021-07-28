@@ -86,7 +86,9 @@ const struct country_chplan *rtw_get_chplan_from_country(const char *country_cod
 
 void dump_country_chplan(void *sel, const struct country_chplan *ent);
 void dump_country_chplan_map(void *sel);
+void dump_country_list(void *sel);
 void dump_chplan_id_list(void *sel);
+void dump_chplan_country_list(void *sel);
 #ifdef CONFIG_RTW_DEBUG
 void dump_chplan_test(void *sel);
 #endif

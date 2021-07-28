@@ -5763,11 +5763,6 @@ static u8 rtw_hal_set_wowlan_ctrl_cmd(_adapter *adapter, u8 enable, u8 change_un
 		registry_par->wakeup_event & BIT(0) && !no_wake)
 		magic_pkt = enable;
 
-	if ((registry_par->wakeup_event & BIT(1)) &&
-		(psecpriv->dot11PrivacyAlgrthm == _WEP40_ ||
-		psecpriv->dot11PrivacyAlgrthm == _WEP104_) && !no_wake)
-			hw_unicast = 1;
-
 	if (registry_par->wakeup_event & BIT(2) && !no_wake)
 		discont_wake = enable;
 
@@ -14522,8 +14517,14 @@ void rtw_dump_cur_efuse(PADAPTER padapter)
 #ifdef CONFIG_RTW_DEBUG
 	if (hal_data->efuse_file_status == EFUSE_FILE_LOADED)
 		RTW_MAP_DUMP_SEL(RTW_DBGDUMP, "EFUSE FILE", hal_data->efuse_eeprom_data, mapsize);
-	else
-		RTW_MAP_DUMP_SEL(RTW_DBGDUMP, "HW EFUSE", hal_data->efuse_eeprom_data, mapsize);
+	else {
+#ifdef CONFIG_MP_INCLUDED
+		if (rtw_mp_mode_check(padapter) && GET_EFUSE_UPDATE_ON(padapter))
+			RTW_MAP_DUMP_SEL(RTW_DBGDUMP, "FAKE EFUSE", hal_data->efuse_eeprom_data, mapsize);
+		else
+#endif
+			RTW_MAP_DUMP_SEL(RTW_DBGDUMP, "HW EFUSE", hal_data->efuse_eeprom_data, mapsize);
+	}
 #endif
 }
 
@@ -15403,6 +15404,7 @@ void rtw_reset_phy_rx_counters(_adapter *padapter)
 		/* reset CCK CCA counter */
 		phy_set_bb_reg(padapter, 0x1a2c, BIT(13) | BIT(12), 0);
 		phy_set_bb_reg(padapter, 0x1a2c, BIT(13) | BIT(12), 2);
+		rtw_reset_phy_trx_ok_counters(padapter);
 
 	} else if (IS_HARDWARE_TYPE_JAGUAR3_11N(padapter)) {
 		/* reset CCK FA and CCK CCA counter */

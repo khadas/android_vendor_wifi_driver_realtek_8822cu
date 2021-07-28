@@ -454,7 +454,7 @@ struct registry_priv {
 #ifdef CONFIG_DFS_MASTER
 	u8 dfs_region_domain;
 #endif
-
+	u8 amsdu_mode;
 #ifdef CONFIG_MCC_MODE
 	u8 en_mcc;
 	u32 rtw_mcc_single_tx_cri;
@@ -559,6 +559,7 @@ struct registry_priv {
 	u8 unassoc_sta_mode_of_stype[UNASOC_STA_SRC_NUM];
 	u16 max_unassoc_sta_cnt;
 #endif
+	u8 nbi_en;
 };
 
 /* For registry parameters */
@@ -1461,6 +1462,15 @@ struct dvobj_priv {
 	u32 rcr_bf_suspend;
 	u32 cr_ext_bf_suspend;
 #endif /* CONFIG_WOWLAN */
+#if defined (CONFIG_CONCURRENT_MODE)  && defined (CONFIG_TSF_SYNC)
+	u16 sync_tsfr_counter;
+#endif
+
+	/* WPAS maintain from w1.fi */
+#define RTW_WPAS_W1FI		0x00
+	/* WPAS maintain from android */
+#define RTW_WPAS_ANDROID	0x01
+	u8 wpas_type;
 };
 
 #define DEV_STA_NUM(_dvobj)			MSTATE_STA_NUM(&((_dvobj)->iface_state))

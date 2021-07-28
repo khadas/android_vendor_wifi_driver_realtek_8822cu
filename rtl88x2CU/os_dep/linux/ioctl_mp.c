@@ -2912,6 +2912,7 @@ int rtw_efuse_file_map(struct net_device *dev,
 }
 
 
+#if !defined(CONFIG_RTW_ANDROID_GKI)
 int rtw_efuse_file_map_store(struct net_device *dev,
 				struct iw_request_info *info,
 				union iwreq_data *wrqu, char *extra)
@@ -2949,6 +2950,7 @@ int rtw_efuse_file_map_store(struct net_device *dev,
 	wrqu->data.length = strlen(extra);
 	return 0;
 }
+#endif /* !defined(CONFIG_RTW_ANDROID_GKI) */
 
 int rtw_bt_efuse_file_map(struct net_device *dev,
 				struct iw_request_info *info,

@@ -442,6 +442,7 @@ enum odm_cmninfo {
 	ODM_CMNINFO_ANTDIV_GPIO,
 	ODM_CMNINFO_EN_AUTO_BW_TH,
 	ODM_CMNINFO_PEAK_DETECT_MODE,
+	ODM_CMNINFO_EN_NBI_DETECT,
 	/*@-----------HOOK BEFORE REG INIT-----------*/
 
 	/*@Dynamic value:*/
@@ -864,6 +865,7 @@ struct dm_struct {
 	boolean			en_dis_dpd;
 	u16			dis_dpd_rate;
 	u8			en_auto_bw_th;
+	boolean			en_nbi_detect;
 	#if (RTL8822C_SUPPORT || RTL8814B_SUPPORT || RTL8197G_SUPPORT || RTL8723F_SUPPORT)
 	u8			txagc_buff[RF_PATH_MEM_SIZE][PHY_NUM_RATE_IDX];
 	u32			bp_0x9b0;

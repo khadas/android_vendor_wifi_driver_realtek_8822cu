@@ -858,9 +858,6 @@ exit:
 
 u32 halbtcoutsrc_GetBtPatchVer(PBTC_COEXIST pBtCoexist)
 {
-	if (pBtCoexist == NULL)
-		RTW_INFO("pBtCoexist pointer is NULL!\n");
-
 	if (pBtCoexist->bt_info.get_bt_fw_ver_cnt <= 5) {
 		if (halbtcoutsrc_IsHwMailboxExist(pBtCoexist) == _TRUE) {
 			_irqL irqL;

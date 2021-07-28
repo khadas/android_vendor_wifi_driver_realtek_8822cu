@@ -434,6 +434,8 @@ void Init_ODM_ComInfo(_adapter *adapter)
 	odm_cmn_info_init(pDM_Odm, ODM_CMNINFO_EFUSE0X3D7, pHalData->efuse0x3d7);
 	odm_cmn_info_init(pDM_Odm, ODM_CMNINFO_EFUSE0X3D8, pHalData->efuse0x3d8);
 
+	odm_cmn_info_init(pDM_Odm, ODM_CMNINFO_EN_NBI_DETECT, adapter->registrypriv.nbi_en);
+
 	/* waiting for PhyDMV034 support*/
 	odm_cmn_info_hook(pDM_Odm, ODM_CMNINFO_MANUAL_SUPPORTABILITY, &(adapter->registrypriv.phydm_ability)); 
 	/*Add by YuChen for adaptivity init*/

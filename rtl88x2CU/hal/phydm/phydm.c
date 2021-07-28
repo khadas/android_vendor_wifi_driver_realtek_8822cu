@@ -2718,6 +2718,9 @@ void odm_cmn_info_init(struct dm_struct *dm, enum odm_cmninfo cmn_info,
 	case ODM_CMNINFO_EN_AUTO_BW_TH:
 		dm->en_auto_bw_th = (u8)value;
 		break;
+	case ODM_CMNINFO_EN_NBI_DETECT:
+		dm->en_nbi_detect = (boolean)value;
+		break;
 #if (RTL8721D_SUPPORT)
 	case ODM_CMNINFO_POWER_VOLTAGE:
 		dm->power_voltage = (u8)value;

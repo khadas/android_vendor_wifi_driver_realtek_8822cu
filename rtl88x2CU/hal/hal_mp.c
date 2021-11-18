@@ -180,7 +180,7 @@ void hal_mpt_CCKTxPowerAdjust(PADAPTER Adapter, BOOLEAN bInCH14)
 	} else if (IS_HARDWARE_TYPE_8723D(Adapter)) {
 		/* 2.4G CCK TX DFIR */
 		/* 2016.01.20 Suggest from RS BB mingzhi*/
-		if ((u1Channel == 14)) {
+		if (u1Channel == 14) {
 			phy_set_bb_reg(Adapter, rCCK0_TxFilter2, bMaskDWord, 0x0000B81C);
 			phy_set_bb_reg(Adapter, rCCK0_DebugPort, bMaskDWord, 0x00000000);
 			phy_set_bb_reg(Adapter, 0xAAC, bMaskDWord, 0x00003667);
@@ -2401,13 +2401,26 @@ u8 mpt_ProSetPMacTx(PADAPTER	Adapter)
 		if (PMacTxInfo.bEnPMacTx == TRUE) {
 			pMptCtx->HWTxmode = PMacTxInfo.Mode;
 			pMptCtx->mpt_rate_index = PMacTxInfo.TX_RATE;
-			if (PMacTxInfo.Mode == CONTINUOUS_TX)
+			if (PMacTxInfo.Mode != PACKETS_TX) 
 				hal_mpt_SetTxPower(Adapter);
 		} else {
 			PMacTxInfo.Mode = pMptCtx->HWTxmode;
 			PMacTxInfo.TX_RATE = pMptCtx->mpt_rate_index;
 			pMptCtx->HWTxmode = TEST_NONE;
 		}
+		if (PMacTxInfo.Mode == OFDM_Single_Tone_TX) {
+			phydm_mp_set_single_tone(p_dm_odm, PMacTxInfo.bEnPMacTx ,pMptCtx->mpt_rf_path);
+			RTW_INFO("To set Tx mode OFDM_Single_Tone_TX\n");
+			return status;
+		}
+
+		if (PMacTxInfo.Mode == CCK_Carrier_Suppression_TX) {
+			phydm_mp_set_carrier_supp(p_dm_odm, PMacTxInfo.bEnPMacTx ,PMacTxInfo.TX_RATE);
+			
+			RTW_INFO("To set Tx mode CCK_Carrier_Suppression_TX\n");
+			return status;
+		}
+
 		mpt_convert_phydm_txinfo_for_jaguar3(&PMacTxInfo, &phydm_mactxinfo);
 		phydm_set_pmac_tx(p_dm_odm, &phydm_mactxinfo, pMptCtx->mpt_rf_path);
 #endif

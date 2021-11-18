@@ -97,8 +97,6 @@ CONFIG_IP_R_MONITOR = n #arp VOQ and high rate
 CONFIG_RTW_UP_MAPPING_RULE = tos
 CONFIG_RTW_MBO = n
 CONFIG_RTW_NBI = n
-# AMSDU in security network
-CONFIG_SEC_AMSDU_MODE = non-spp
 ########################## Android ###########################
 # CONFIG_RTW_ANDROID - 0: no Android, 4/5/6/7/8/9/10/11 : Android version
 CONFIG_RTW_ANDROID = 0
@@ -143,6 +141,13 @@ CONFIG_MP_VHT_HW_TX_MODE = n
 CONFIG_LAYER2_ROAMING = y
 #bit0: ROAM_ON_EXPIRED, #bit1: ROAM_ON_RESUME, #bit2: ROAM_ACTIVE
 CONFIG_ROAMING_FLAG = 0x3
+####################### Security Memory ############################
+# Define for using dma_declare_coherent_memory DMA API.
+# User Must set the SECURITY_MEM_ADDR and SECURITY_MEM_SIZE.
+# If SECURITY_MEM_ADDR is NULL, driver will show WARN_ON for notification.
+CONFIG_SECURITY_MEM = n
+CONFIG_SECURITY_MEM_ADDR = 0
+CONFIG_SECURITY_MEM_SIZE = 3686400
 ###################### Platform Related #######################
 CONFIG_PLATFORM_I386_PC = n
 CONFIG_PLATFORM_ANDROID_X86 = n
@@ -1342,12 +1347,10 @@ ifeq ($(CONFIG_RTW_NBI), y)
 EXTRA_CFLAGS += -DCONFIG_RTW_NBI
 endif
 
-ifeq ($(CONFIG_SEC_AMSDU_MODE), non-spp)
-EXTRA_CFLAGS += -DRTW_AMSDU_MODE=0
-else ifeq ($(CONFIG_SEC_AMSDU_MODE), spp)
-EXTRA_CFLAGS += -DRTW_AMSDU_MODE=1
-else ifeq ($(CONFIG_SEC_AMSDU_MODE), disable)
-EXTRA_CFLAGS += -DRTW_AMSDU_MODE=2
+ifeq ($(CONFIG_SECURITY_MEM), y)
+EXTRA_CFLAGS += -DCONFIG_SECURITY_MEM
+EXTRA_CFLAGS += -DSECURITY_MEM_ADDR=$(CONFIG_SECURITY_MEM_ADDR)
+EXTRA_CFLAGS += -DSECURITY_MEM_SIZE=$(CONFIG_SECURITY_MEM_SIZE)
 endif
 
 ifeq ($(CONFIG_PLATFORM_I386_PC), y)

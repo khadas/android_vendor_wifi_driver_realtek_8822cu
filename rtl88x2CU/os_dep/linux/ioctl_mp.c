@@ -2114,9 +2114,11 @@ int rtw_mp_pretx_proc(PADAPTER padapter, u8 bStartTest, char *extra)
 			is_supported_ht(padapter->registrypriv.wireless_mode))
 			pmp_priv->tx.attrib.ht_en = 1;
 #endif
-		pmp_priv->tx.stop = 0;
-		pmp_priv->tx.count = 1;
-		SetPacketTx(padapter);
+		if (!IS_HARDWARE_TYPE_JAGUAR3(padapter)) {
+			pmp_priv->tx.stop = 0;
+			pmp_priv->tx.count = 1;
+			SetPacketTx(padapter);
+		}
 	} else
 		pmp_priv->mode = MP_ON;
 
@@ -3073,7 +3075,7 @@ int rtw_mp_link(struct net_device *dev,
 		/* tmp[0],[1],[2] */
 		/* txdata,00e04c871200........... */
 		if (strcmp(tmp[0], "txdata") == 0) {
-			if ((tmp[1] == NULL)) {
+			if (tmp[1] == NULL) {
 				err = -EINVAL;
 				goto exit;
 			}

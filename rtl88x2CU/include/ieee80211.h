@@ -2010,7 +2010,7 @@ u8 convert_ip_addr(u8 hch, u8 mch, u8 lch);
 int wifirate2_ratetbl_inx(unsigned char rate);
 
 /* For amsdu mode. */
-void rtw_set_spp_amsdu_mode(u8 mode, u8 *rsn_ie, int rsn_ie_len);
+/*void rtw_set_spp_amsdu_mode(u8 mode, u8 *rsn_ie, int rsn_ie_len); */
 u8 rtw_check_amsdu_disable(u8 mode, u8 spp_opt);
 
 #endif /* IEEE80211_H */

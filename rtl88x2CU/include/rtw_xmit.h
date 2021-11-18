@@ -613,6 +613,10 @@ struct xmit_buf {
 #endif
 #endif
 
+#ifdef CONFIG_PCIE_DMA_COHERENT
+	dma_addr_t dma_bpa;
+#endif
+
 #if defined(DBG_XMIT_BUF) || defined(DBG_XMIT_BUF_EXT)
 	u8 no;
 #endif

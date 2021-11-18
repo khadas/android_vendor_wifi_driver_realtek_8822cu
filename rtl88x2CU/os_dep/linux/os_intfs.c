@@ -689,7 +689,7 @@ module_param(rtw_dfs_region_domain, uint, 0644);
 MODULE_PARM_DESC(rtw_dfs_region_domain, "0:NONE, 1:FCC, 2:MKK, 3:ETSI");
 #endif
 
-uint rtw_amsdu_mode = RTW_AMSDU_MODE;
+uint rtw_amsdu_mode = RTW_AMSDU_MODE_NON_SPP;
 module_param(rtw_amsdu_mode, uint, 0644);
 MODULE_PARM_DESC(rtw_amsdu_mode, "0:non-spp, 1:spp, 2:all drop");
 

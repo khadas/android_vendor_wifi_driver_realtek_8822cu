@@ -297,6 +297,10 @@ struct rtw_rx_ring {
 	dma_addr_t		dma;
 	unsigned int		idx;
 	struct sk_buff	*rx_buf[PCI_MAX_RX_COUNT];
+#ifdef CONFIG_PCIE_DMA_COHERENT
+	void *vdma_bpa[PCI_MAX_RX_COUNT];
+#endif
+
 };
 #endif
 

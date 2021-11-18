@@ -3015,8 +3015,8 @@ static int rtw_cfg80211_set_probe_req_wpsp2pie(_adapter *padapter, char *buf, in
 			_rtw_memcpy(pmlmepriv->p2p_probe_req_ie, p2p_ie, p2p_ielen);
 			pmlmepriv->p2p_probe_req_ie_len = p2p_ielen;
 
-			if (rtw_get_p2p_attr_content(p2p_ie, p2p_ielen, P2P_ATTR_LISTEN_CH, (u8 *)listen_ch_attr, (uint *) &attr_contentlen)
-				&& attr_contentlen == 5) {
+			attr_contentlen = sizeof(listen_ch_attr);
+			if (rtw_get_p2p_attr_content(p2p_ie, p2p_ielen, P2P_ATTR_LISTEN_CH, (u8 *)listen_ch_attr, (uint *) &attr_contentlen)) {
 				if (wdinfo->listen_channel !=  listen_ch_attr[4]) {
 					RTW_INFO(FUNC_ADPT_FMT" listen channel - country:%c%c%c, class:%u, ch:%u\n",
 						FUNC_ADPT_ARG(padapter), listen_ch_attr[0], listen_ch_attr[1], listen_ch_attr[2],
@@ -3615,6 +3615,7 @@ static int rtw_cfg80211_set_auth_type(struct security_priv *psecuritypriv,
 {
 	RTW_INFO("%s, nl80211_auth_type=%d\n", __func__, sme_auth_type);
 
+#ifndef CONFIG_KERNEL_PATCH_EXTERNAL_AUTH
 	if (NL80211_AUTHTYPE_MAX <= (int)MLME_AUTHTYPE_SAE) {
 		if (MLME_AUTHTYPE_SAE == psecuritypriv->auth_type) {
 			/* This case pre handle in
@@ -3623,7 +3624,9 @@ static int rtw_cfg80211_set_auth_type(struct security_priv *psecuritypriv,
 			psecuritypriv->auth_alg = WLAN_AUTH_SAE;
 			return 0;
 		}
-	} else if (sme_auth_type == (int)MLME_AUTHTYPE_SAE) {
+	} else
+#endif
+	if (sme_auth_type == (int)MLME_AUTHTYPE_SAE) {
 		psecuritypriv->auth_type = MLME_AUTHTYPE_SAE;
 		psecuritypriv->auth_alg = WLAN_AUTH_SAE;
 		return 0;
@@ -6458,6 +6461,7 @@ static int rtw_cfg80211_set_probe_resp_wpsp2pie(struct net_device *net, char *bu
 			#endif
 
 			/* Check P2P Capability ATTR */
+			attr_contentlen = sizeof(cap_attr);
 			if (rtw_get_p2p_attr_content(p2p_ie, p2p_ielen, P2P_ATTR_CAPABILITY, (u8 *)&cap_attr, (uint *) &attr_contentlen)) {
 				u8 grp_cap = 0;
 				/* RTW_INFO( "[%s] Got P2P Capability Attr!!\n", __FUNCTION__ ); */
@@ -7238,6 +7242,7 @@ void rtw_cfg80211_issue_p2p_provision_request(_adapter *padapter, const u8 *buf,
 	pwdinfo->tx_prov_disc_info.wps_config_method_request = WPS_CM_PUSH_BUTTON;
 
 	rtw_get_wps_ie(frame_body + _PUBLIC_ACTION_IE_OFFSET_, frame_body_len - _PUBLIC_ACTION_IE_OFFSET_, wpsie, &wpsielen);
+	wps_devicepassword_id_len = sizeof(wps_devicepassword_id);
 	rtw_get_wps_attr_content(wpsie, wpsielen, WPS_ATTR_DEVICE_PWID, (u8 *) &wps_devicepassword_id, &wps_devicepassword_id_len);
 	wps_devicepassword_id = be16_to_cpu(wps_devicepassword_id);
 
@@ -7265,7 +7270,9 @@ void rtw_cfg80211_issue_p2p_provision_request(_adapter *padapter, const u8 *buf,
 
 	if (rtw_get_p2p_ie(frame_body + _PUBLIC_ACTION_IE_OFFSET_, frame_body_len - _PUBLIC_ACTION_IE_OFFSET_, p2p_ie, &p2p_ielen)) {
 
+		devinfo_contentlen = sizeof(devinfo_content);
 		rtw_get_p2p_attr_content(p2p_ie, p2p_ielen, P2P_ATTR_DEVICE_INFO, devinfo_content, &devinfo_contentlen);
+		capability_len = sizeof(capability);
 		rtw_get_p2p_attr_content(p2p_ie, p2p_ielen, P2P_ATTR_CAPABILITY, (u8 *)&capability, &capability_len);
 
 	}

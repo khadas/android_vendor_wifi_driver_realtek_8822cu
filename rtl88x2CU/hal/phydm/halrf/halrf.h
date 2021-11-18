@@ -124,7 +124,7 @@
 #define LCK_VER_8723D "0x01"
 #define LCK_VER_8822B "0x02"
 #define LCK_VER_8822C "0x00"
-#define LCK_VER_8821C "0x02"
+#define LCK_VER_8821C "0x03"
 #define LCK_VER_8814B "0x02"
 #define LCK_VER_8195B "0x02"
 #define LCK_VER_8710C "0x02"

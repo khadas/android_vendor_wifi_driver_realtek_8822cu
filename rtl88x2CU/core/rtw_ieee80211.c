@@ -1273,6 +1273,7 @@ u8 *rtw_get_wps_attr(u8 *wps_ie, uint wps_ielen, u16 target_attr_id , u8 *buf_at
  * @wps_ielen: Length limit from wps_ie
  * @target_attr_id: The attribute ID of WPS attribute to search
  * @buf_content: If not NULL and the WPS attribute is found, WPS attribute content will be copied to the buf starting from buf_content
+ *               If len_content is NULL, only copy one byte.
  * @len_content: If not NULL and the WPS attribute is found, will set to the length of the WPS attribute content
  *
  * Returns: the address of the specific WPS attribute content found, or NULL
@@ -1282,20 +1283,25 @@ u8 *rtw_get_wps_attr_content(u8 *wps_ie, uint wps_ielen, u16 target_attr_id , u8
 	u8 *attr_ptr;
 	u32 attr_len;
 
-	if (len_content)
-		*len_content = 0;
-
 	attr_ptr = rtw_get_wps_attr(wps_ie, wps_ielen, target_attr_id, NULL, &attr_len);
 
 	if (attr_ptr && attr_len) {
-		if (buf_content)
-			_rtw_memcpy(buf_content, attr_ptr + 4, attr_len - 4);
+		if (len_content) {
+			if ((buf_content && (*len_content > (attr_len - 4))) || !buf_content)
+				*len_content = attr_len - 4;
+		}
 
-		if (len_content)
-			*len_content = attr_len - 4;
+		if (len_content && buf_content) {
+			_rtw_memcpy(buf_content, attr_ptr + 4, *len_content);
+		} else if (buf_content) {
+			_rtw_memcpy(buf_content, attr_ptr + 4, 1);
+		}
 
 		return attr_ptr + 4;
 	}
+
+	if (len_content)
+		*len_content = 0;
 
 	return NULL;
 }
@@ -2316,6 +2322,7 @@ u8 *rtw_get_p2p_attr(u8 *p2p_ie, uint p2p_ielen, u8 target_attr_id , u8 *buf_att
  * @p2p_ielen: Length limit from p2p_ie
  * @target_attr_id: The attribute ID of P2P attribute to search
  * @buf_content: If not NULL and the P2P attribute is found, P2P attribute content will be copied to the buf starting from buf_content
+ *               If len_content is NULL, only copy one byte.
  * @len_content: If not NULL and the P2P attribute is found, will set to the length of the P2P attribute content
  *
  * Returns: the address of the specific P2P attribute content found, or NULL
@@ -2325,20 +2332,25 @@ u8 *rtw_get_p2p_attr_content(u8 *p2p_ie, uint p2p_ielen, u8 target_attr_id , u8 
 	u8 *attr_ptr;
 	u32 attr_len;
 
-	if (len_content)
-		*len_content = 0;
-
 	attr_ptr = rtw_get_p2p_attr(p2p_ie, p2p_ielen, target_attr_id, NULL, &attr_len);
 
 	if (attr_ptr && attr_len) {
-		if (buf_content)
-			_rtw_memcpy(buf_content, attr_ptr + 3, attr_len - 3);
+		if (len_content) {
+			if ((buf_content && (*len_content > (attr_len - 3))) || !buf_content)
+				*len_content = attr_len - 3;
+		}
 
-		if (len_content)
-			*len_content = attr_len - 3;
+		if (len_content && buf_content) {
+			_rtw_memcpy(buf_content, attr_ptr + 3, *len_content);
+		} else if (buf_content) {
+			_rtw_memcpy(buf_content, attr_ptr + 3, 1);
+		}
 
 		return attr_ptr + 3;
 	}
+
+	if (len_content)
+		*len_content = 0;
 
 	return NULL;
 }
@@ -3165,6 +3177,7 @@ const char *action_public_str(u8 action)
 	return _action_public_str[action];
 }
 
+#if 0
 /*tmp for sta mode, root cause have to wait supplicant's update.*/
 void rtw_set_spp_amsdu_mode(u8 mode, u8 *rsn_ie, int rsn_ie_len)
 {
@@ -3172,35 +3185,39 @@ void rtw_set_spp_amsdu_mode(u8 mode, u8 *rsn_ie, int rsn_ie_len)
 	int i, ret = _SUCCESS;
 	u8 spp_req_cap = 0;
 
+	ret = rtw_rsne_info_parse(rsn_ie, rsn_ie_len, &info);
+	if (ret != _SUCCESS)
+		return;
+
 	if (mode == RTW_AMSDU_MODE_NON_SPP ) {
-		spp_req_cap = (u8)(~SPP_CAP | ~SPP_REQ);
+		spp_req_cap = 0; 						/* SPP_CAP=0, SPP_REQ=0 */
 	} else if (mode == RTW_AMSDU_MODE_SPP) {
-		spp_req_cap = (u8)(SPP_CAP | SPP_REQ);
+		spp_req_cap = SPP_CAP | SPP_REQ;
 	} else if (mode == RTW_AMSDU_MODE_ALL_DROP) {
-		spp_req_cap = (u8)(~SPP_CAP | SPP_REQ);
+		spp_req_cap = SPP_REQ; 					/* SPP_CAP=0, SPP_REQ=1 */
 	} else {
 		RTW_INFO("%s unexpected mode = %d, please check the config\n", __func__, mode);
 		return;
 	}
 
-	ret = rtw_rsne_info_parse(rsn_ie, rsn_ie_len, &info);
-	if (ret != _SUCCESS)
-		return;
-
 	SET_RSN_CAP_SPP(info.cap, spp_req_cap);
 	RTW_INFO("%s set spp opt = %d\n", __func__, GET_RSN_CAP_SPP_OPT(info.cap));
 }
+#endif
 
+/*	Returns:
+	_TRUE	-- 	Disable AMSDU
+	_FALSE	--	Enable AMSDU
+*/
 u8 rtw_check_amsdu_disable(u8 mode, u8 spp_opt)
 {
 	u8 ret = _FALSE;
-	RTW_INFO("%s spp_opt=%u \n", __func__, spp_opt);
 
 	/* pp amsdu: peer's required has to be 0, or disable */
 	if ((mode == RTW_AMSDU_MODE_NON_SPP) && (spp_opt & SPP_REQ))
 		ret = _TRUE;
 	/* spp amsdu: peer's cap has to be 1, or disable */
-	else if ((mode == RTW_AMSDU_MODE_SPP) && ~(spp_opt & SPP_CAP))
+	else if ((mode == RTW_AMSDU_MODE_SPP) && (!(spp_opt & SPP_CAP)))
 		ret = _TRUE;
 	/* mode = all drop */
 	else if (mode == RTW_AMSDU_MODE_ALL_DROP)

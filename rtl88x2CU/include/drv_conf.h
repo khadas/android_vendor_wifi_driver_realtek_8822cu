@@ -809,8 +809,4 @@ defined(CONFIG_RTL8723F) /*|| defined(CONFIG_RTL8814A)*/
 #define DBG_CPU_INFO	/* Add CPU info to debug message prefix */
 #endif
 
-#ifndef RTW_AMSDU_MODE
-#define RTW_AMSDU_MODE 0 /* 0:non-SPP, 1:spp mode, 2:All drop */
-#endif
-
 #endif /* __DRV_CONF_H__ */

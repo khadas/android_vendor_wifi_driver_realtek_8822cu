@@ -4315,6 +4315,7 @@ static int rtw_p2p_get_wps_configmethod(struct net_device *dev,
 
 			wpsie = rtw_get_wps_ie_from_scan_queue(&pnetwork->network.IEs[0], pnetwork->network.IELength, NULL, &wpsie_len, pnetwork->network.Reserved[0]);
 			if (wpsie) {
+				attr_contentlen = sizeof(attr_content);
 				rtw_get_wps_attr_content(wpsie, wpsie_len, WPS_ATTR_CONF_METHOD, (u8 *)&attr_content, &attr_contentlen);
 				if (attr_contentlen) {
 					attr_content = be16_to_cpu(attr_content);
@@ -4448,6 +4449,7 @@ static int rtw_p2p_get_go_device_address(struct net_device *dev,
 					/*	The P2P Device Info attribute is included in the probe response frame. */
 
 					_rtw_memset(attr_content, 0x00, 100);
+					attr_contentlen = sizeof(attr_content);
 					if (rtw_get_p2p_attr_content(p2pie, p2pielen, P2P_ATTR_DEVICE_ID, attr_content, &attr_contentlen)) {
 						/*	Handle the P2P Device ID attribute of Beacon first */
 						blnMatch = 1;
@@ -4530,6 +4532,7 @@ static int rtw_p2p_get_device_type(struct net_device *dev,
 
 			wpsie = rtw_get_wps_ie_from_scan_queue(&pnetwork->network.IEs[0], pnetwork->network.IELength, NULL, &wpsie_len, pnetwork->network.Reserved[0]);
 			if (wpsie) {
+				dev_type_len = sizeof(dev_type);
 				rtw_get_wps_attr_content(wpsie, wpsie_len, WPS_ATTR_PRIMARY_DEV_TYPE, dev_type, &dev_type_len);
 				if (dev_type_len) {
 					u16	type = 0;
@@ -4604,6 +4607,7 @@ static int rtw_p2p_get_device_name(struct net_device *dev,
 
 			wpsie = rtw_get_wps_ie_from_scan_queue(&pnetwork->network.IEs[0], pnetwork->network.IELength, NULL, &wpsie_len, pnetwork->network.Reserved[0]);
 			if (wpsie) {
+				dev_len = sizeof(dev_name);
 				rtw_get_wps_attr_content(wpsie, wpsie_len, WPS_ATTR_DEVICE_NAME, dev_name, &dev_len);
 				if (dev_len) {
 					sprintf(dev_name_str, "\n\nN=%s", dev_name);
@@ -4644,7 +4648,7 @@ static int rtw_p2p_get_invitation_procedure(struct net_device *dev,
 	struct wlan_network *pnetwork = NULL;
 	u8 blnMatch = 0;
 	u8 *p2pie;
-	uint p2pielen = 0, attr_contentlen = 0;
+	uint p2pielen = 0, attr_contentlen = 2;
 	u8 attr_content[2] = { 0x00 };
 	u8 inv_proc_str[P2P_PRIVATE_IOCTL_SET_LEN] = { 0x00 };
 
@@ -4675,6 +4679,7 @@ static int rtw_p2p_get_invitation_procedure(struct net_device *dev,
 			if (p2pie) {
 				while (p2pie) {
 					/* _rtw_memset( attr_content, 0x00, 2); */
+					attr_contentlen = sizeof(attr_content);
 					if (rtw_get_p2p_attr_content(p2pie, p2pielen, P2P_ATTR_CAPABILITY, attr_content, &attr_contentlen)) {
 						/*	Handle the P2P capability attribute */
 						blnMatch = 1;
@@ -4847,7 +4852,7 @@ static int rtw_p2p_invite_req(struct net_device *dev,
 	uint						uintPeerChannel = 0;
 	u8						attr_content[50] = { 0x00 };
 	u8						*p2pie;
-	uint						p2pielen = 0, attr_contentlen = 0;
+	uint						p2pielen = 0, attr_contentlen = 50;
 	_irqL					irqL;
 	struct tx_invite_req_info	*pinvite_req_info = &pwdinfo->invitereq_info;
 #ifdef CONFIG_CONCURRENT_MODE
@@ -4905,6 +4910,7 @@ static int rtw_p2p_invite_req(struct net_device *dev,
 			/*	The P2P Device ID attribute is included in the Beacon frame. */
 			/*	The P2P Device Info attribute is included in the probe response frame. */
 
+			attr_contentlen = sizeof(attr_content);
 			if (rtw_get_p2p_attr_content(p2pie, p2pielen, P2P_ATTR_DEVICE_ID, attr_content, &attr_contentlen)) {
 				/*	Handle the P2P Device ID attribute of Beacon first */
 				if (_rtw_memcmp(attr_content, pinvite_req_info->peer_macaddr, ETH_ALEN)) {
@@ -5120,7 +5126,7 @@ static int rtw_p2p_set_pc(struct net_device *dev,
 	struct	wlan_network	*pnetwork = NULL;
 	u8					attr_content[50] = { 0x00 };
 	u8 *p2pie;
-	uint					p2pielen = 0, attr_contentlen = 0;
+	uint					p2pielen = 0, attr_contentlen = 50;
 	_irqL				irqL;
 	uint					uintPeerChannel = 0;
 
@@ -5160,6 +5166,7 @@ static int rtw_p2p_set_pc(struct net_device *dev,
 			/*	The P2P Device ID attribute is included in the Beacon frame. */
 			/*	The P2P Device Info attribute is included in the probe response frame. */
 			printk("[%s] Got P2P IE\n", __FUNCTION__);
+			attr_contentlen = sizeof(attr_content);
 			if (rtw_get_p2p_attr_content(p2pie, p2pielen, P2P_ATTR_DEVICE_ID, attr_content, &attr_contentlen)) {
 				/*	Handle the P2P Device ID attribute of Beacon first */
 				printk("[%s] P2P_ATTR_DEVICE_ID\n", __FUNCTION__);
@@ -5332,7 +5339,7 @@ static int rtw_p2p_prov_disc(struct net_device *dev,
 	uint					uintPeerChannel = 0;
 	u8					attr_content[100] = { 0x00 };
 	u8 *p2pie;
-	uint					p2pielen = 0, attr_contentlen = 0;
+	uint					p2pielen = 0, attr_contentlen = 100;
 	_irqL				irqL;
 #ifdef CONFIG_CONCURRENT_MODE
 	struct roch_info 		*prochinfo = &padapter->rochinfo;
@@ -5401,7 +5408,7 @@ static int rtw_p2p_prov_disc(struct net_device *dev,
 			while (p2pie) {
 				/*	The P2P Device ID attribute is included in the Beacon frame. */
 				/*	The P2P Device Info attribute is included in the probe response frame. */
-
+				attr_contentlen = sizeof(attr_content);
 				if (rtw_get_p2p_attr_content(p2pie, p2pielen, P2P_ATTR_DEVICE_ID, attr_content, &attr_contentlen)) {
 					/*	Handle the P2P Device ID attribute of Beacon first */
 					if (_rtw_memcmp(attr_content, peerMAC, ETH_ALEN)) {
@@ -8465,6 +8472,30 @@ _clear_path:
 }
 #endif
 
+static int rtw_get_ic_type(struct net_device *dev,
+				struct iw_request_info *info,
+				union iwreq_data *wrqu, char *extra)
+{
+	_adapter *padapter = (_adapter *)rtw_netdev_priv(dev);
+	struct pwrctrl_priv *pwrctrlpriv = adapter_to_pwrctl(padapter);
+	char *pstring = extra;
+	u8 regdata;
+
+	_rtw_memset(pstring, 0, wrqu->data.length);
+
+	regdata = (rtw_read32(padapter, 0xF0) & 0xf000) >> 12;
+	RTW_INFO("%s: f0[15:12]= 0x%x\n", __FUNCTION__, regdata);
+
+	if (regdata == 0x04)
+		pstring += sprintf(pstring , ":%s\n" ,"rtl8822c-vbs");
+	else
+		pstring += sprintf(pstring , ":%s\n" ,"rtl8822c-vs");
+
+	wrqu->data.length = strlen(extra);
+
+	return 0;
+}
+
 static int rtw_mp_efuse_get(struct net_device *dev,
 			    struct iw_request_info *info,
 			    union iwreq_data *wdata, char *extra)
@@ -10588,6 +10619,10 @@ static int rtw_priv_get(struct net_device *dev,
 				rtw_vendor_ie_get(dev , info , wdata , extra);
 				break;
 #endif
+			case GET_IC_TYPE:
+				RTW_INFO("get IC Type\n");
+				rtw_get_ic_type(dev , info , wdata , extra);
+				break;
 			default:
 				return -EIO;
 			}
@@ -12410,6 +12445,7 @@ static const struct iw_priv_args rtw_private_args[] = {
 	{ MP_SD_IREAD, IW_PRIV_TYPE_CHAR | 1024, IW_PRIV_TYPE_CHAR | IW_PRIV_SIZE_MASK, "sd_iread" },
 	{ MP_SD_IWRITE, IW_PRIV_TYPE_CHAR | 1024, IW_PRIV_TYPE_CHAR | IW_PRIV_SIZE_MASK, "sd_iwrite" },
 #endif
+	{ GET_IC_TYPE, IW_PRIV_TYPE_CHAR | 1024, IW_PRIV_TYPE_CHAR | IW_PRIV_SIZE_MASK, "ic_type" },
 };
 
 

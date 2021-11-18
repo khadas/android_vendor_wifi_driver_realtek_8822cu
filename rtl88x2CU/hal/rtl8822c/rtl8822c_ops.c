@@ -1923,7 +1923,7 @@ void hw_var_set_dl_rsvd_page(PADAPTER adapter, u8 mstatus)
 	u8 DLBcnCount = 0;
 	u32 poll = 0;
 	u8 val8;
-	u8 restore[2];
+	u8 restore[3];
 	u8 hw_port = rtw_hal_get_port(adapter);
 
 	RTW_INFO(FUNC_ADPT_FMT ":+ hw_port=%d mstatus(%x)\n",
@@ -1950,7 +1950,12 @@ void hw_var_set_dl_rsvd_page(PADAPTER adapter, u8 mstatus)
 		 */
 		val8 = rtw_read8(adapter, REG_BCN_CTRL_8822C);
 		restore[1] = val8;
-		val8 &= ~BIT_EN_BCN_FUNCTION_8822C;
+		/* val8 &= ~BIT_EN_BCN_FUNCTION_8822C; */
+		restore[2] = rtw_read8(adapter, REG_FWHW_TXQ_CTRL_8822C + 2);
+		if (restore[2] & BIT(6)) {
+			rtw_write8(adapter, REG_FWHW_TXQ_CTRL_8822C + 2,
+				(restore[2] & ~BIT(6)));
+		}
 		val8 |= BIT_DIS_TSF_UDT_8822C;
 		rtw_write8(adapter, REG_BCN_CTRL_8822C, val8);
 
@@ -2000,6 +2005,7 @@ void hw_var_set_dl_rsvd_page(PADAPTER adapter, u8 mstatus)
 				 ADPT_ARG(adapter), DLBcnCount, poll);
 		}
 
+		rtw_write8(adapter, REG_FWHW_TXQ_CTRL_8822C + 2, restore[2]);
 		rtw_write8(adapter, REG_BCN_CTRL, restore[1]);
 		rtw_write8(adapter,  REG_CR + 1, restore[0]);
 #if 0

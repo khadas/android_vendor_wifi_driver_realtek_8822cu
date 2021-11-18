@@ -310,6 +310,7 @@ enum {
 #endif
 	MP_SD_IREAD,
 	MP_SD_IWRITE,
+	GET_IC_TYPE,
 };
 
 struct mp_priv {

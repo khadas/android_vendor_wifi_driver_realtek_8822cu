@@ -517,8 +517,10 @@ static inline void rtw_thread_wait_stop(void)
 __inline static void flush_signals_thread(void)
 {
 #ifdef PLATFORM_LINUX
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
 	if (signal_pending(current))
 		flush_signals(current);
+#endif
 #endif
 }
 

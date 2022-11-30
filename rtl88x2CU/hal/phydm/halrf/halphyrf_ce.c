@@ -988,17 +988,25 @@ odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 	/*3 7. If necessary, move the index of swing table to adjust Tx power.*/
 	for (i = 0; i < c.rf_path_count; i++) {
 		if (i == RF_PATH_B) {
-			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_b, DELTA_SWINGIDX_SIZE);
-			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_b, DELTA_SWINGIDX_SIZE);
+			if (delta_swing_table_idx_tup_b)
+				odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_b, DELTA_SWINGIDX_SIZE);
+			if (delta_swing_table_idx_tdown_b)
+				odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_b, DELTA_SWINGIDX_SIZE);
 		} else if (i == RF_PATH_C) {
-			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_c, DELTA_SWINGIDX_SIZE);
-			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_c, DELTA_SWINGIDX_SIZE);
+			if (delta_swing_table_idx_tup_c)
+				odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_c, DELTA_SWINGIDX_SIZE);
+			if (delta_swing_table_idx_tdown_c)
+				odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_c, DELTA_SWINGIDX_SIZE);
 		} else if (i == RF_PATH_D) {
-			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_d, DELTA_SWINGIDX_SIZE);
-			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_d, DELTA_SWINGIDX_SIZE);
+			if (delta_swing_table_idx_tup_d)
+				odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_d, DELTA_SWINGIDX_SIZE);
+			if (delta_swing_table_idx_tdown_d)
+				odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_d, DELTA_SWINGIDX_SIZE);
 		} else {
-			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_a, DELTA_SWINGIDX_SIZE);
-			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_a, DELTA_SWINGIDX_SIZE);
+			if (delta_swing_table_idx_tup_a)
+				odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_a, DELTA_SWINGIDX_SIZE);
+			if (delta_swing_table_idx_tdown_a)
+				odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_a, DELTA_SWINGIDX_SIZE);
 		}
 
 		cali_info->delta_power_index_last[i] = cali_info->delta_power_index[i];	/*recording poer index offset*/

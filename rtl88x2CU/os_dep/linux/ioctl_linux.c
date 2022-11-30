@@ -1398,14 +1398,18 @@ static int rtw_wx_set_mode(struct net_device *dev, struct iw_request_info *a,
 		goto exit;
 	}
 
-	if (rtw_set_802_11_infrastructure_mode(padapter, networkType, 0) == _FALSE) {
-
-		ret = -EPERM;
-		goto exit;
-
+#ifdef CONFIG_AP_MODE
+	if (MLME_IS_AP(padapter) && networkType == Ndis802_11Infrastructure)
+		rtw_stop_ap_cmd(padapter, RTW_CMDF_WAIT_ACK);
+	else
+#endif
+	{
+		if (rtw_set_802_11_infrastructure_mode(padapter, networkType, 0) == _FALSE) {
+			ret = -EPERM;
+			goto exit;
+		}
+		rtw_setopmode_cmd(padapter, networkType, RTW_CMDF_WAIT_ACK);
 	}
-
-	rtw_setopmode_cmd(padapter, networkType, RTW_CMDF_WAIT_ACK);
 
 	if (check_fwstate(pmlmepriv, WIFI_MONITOR_STATE) == _TRUE)
 		rtw_indicate_connect(padapter);
@@ -1486,7 +1490,6 @@ static int rtw_wx_set_pmkid(struct net_device *dev,
 
 				_rtw_memcpy(psecuritypriv->PMKIDList[j].PMKID, pPMK->pmkid, IW_PMKID_LEN);
 				psecuritypriv->PMKIDList[j].bUsed = _TRUE;
-				psecuritypriv->PMKIDIndex = j + 1;
 				blInserted = _TRUE;
 				break;
 			}
@@ -3435,9 +3438,11 @@ static int rtw_wx_set_channel_plan(struct net_device *dev,
 				   union iwreq_data *wrqu, char *extra)
 {
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(dev);
-	u8 channel_plan_req = (u8)(*((int *)wrqu));
+	u16 channel_plan_req = (u16)(*((int *)wrqu));
 
-	if (_SUCCESS != rtw_set_channel_plan(padapter, channel_plan_req))
+	rtw_chplan_ioctl_input_mapping(&channel_plan_req, NULL);
+
+	if (_SUCCESS != rtw_set_channel_plan(padapter, channel_plan_req, RTW_CHPLAN_6G_UNSPECIFIED, RTW_REGD_SET_BY_USER))
 		return -EPERM;
 
 	return 0;
@@ -7879,7 +7884,7 @@ static int rtw_wx_set_priv(struct net_device *dev,
 	case ANDROID_WIFI_CMD_COUNTRY: {
 		char country_code[10];
 		sscanf(ext, "%*s %s", country_code);
-		rtw_set_country(padapter, country_code);
+		rtw_set_country(padapter, country_code, RTW_REGD_SET_BY_USER);
 		sprintf(ext, "OK");
 	}
 		break;

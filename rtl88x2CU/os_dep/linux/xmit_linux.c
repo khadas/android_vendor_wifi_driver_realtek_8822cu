@@ -407,7 +407,11 @@ int _rtw_xmit_entry(_pkt *pkt, _nic_hdl pnetdev)
 	}
 	DBG_COUNTER(padapter->tx_logs.os_tx);
 
-	if (rtw_if_up(padapter) == _FALSE) {
+	if ((rtw_if_up(padapter) == _FALSE)
+#ifdef CONFIG_LAYER2_ROAMING
+		&&(!padapter->mlmepriv.roam_network)
+#endif
+	){
 		DBG_COUNTER(padapter->tx_logs.os_tx_err_up);
 		#ifdef DBG_TX_DROP_FRAME
 		RTW_INFO("DBG_TX_DROP_FRAME %s if_up fail\n", __FUNCTION__);

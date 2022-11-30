@@ -266,7 +266,7 @@ u8 *rtw_set_ie
 (
 	u8 *pbuf,
 	sint index,
-	uint len,
+	uint len, /* IE content length, not entire IE length */
 	const u8 *source,
 	uint *frlen /* frame length */
 )
@@ -282,6 +282,15 @@ u8 *rtw_set_ie
 		*frlen = *frlen + (len + 2);
 
 	return pbuf + len + 2;
+}
+
+u8 *rtw_set_ie_tpc_report(u8 *buf, u32 *buf_len, u8 tx_power, u8 link_margin)
+{
+	u8 ie_data[2];
+
+	ie_data[0] = tx_power;
+	ie_data[1] = link_margin;
+	return rtw_set_ie(buf, WLAN_EID_TPC_REPORT,  2, ie_data, buf_len);
 }
 
 inline u8 *rtw_set_ie_ch_switch(u8 *buf, u32 *buf_len, u8 ch_switch_mode,
@@ -411,6 +420,61 @@ u8 *rtw_get_ie_ex(const u8 *in_ie, uint in_len, u8 eid, const u8 *oui, u8 oui_le
 	}
 
 	return (u8 *)target_ie;
+}
+
+/**
+ * rtw_ies_update_ie - Find matching IEs and update it
+ *
+ * @ies: address of IEs to search
+ * @ies_len: address of length of ies, will update to new length
+ * @offset: the offset to start scarch
+ * @eid: element ID to match
+ * @content: new content will update to matching element
+ * @content_len: length of new content
+ * Returns: _SUCCESS: ies is updated, _FAIL: not updated
+ */
+u8 rtw_ies_update_ie(u8 *ies, uint *ies_len, uint ies_offset, u8 eid, const u8 *content, u8 content_len)
+{
+	u8 ret = _FAIL;
+	u8 *target_ie;
+	u32 target_ielen;
+	u8 *start, *remain_ies = NULL, *backup_ies = NULL;
+	uint search_len, remain_len = 0;
+	sint offset;
+
+	if (ies == NULL || *ies_len == 0 || *ies_len <= ies_offset)
+		goto exit;
+
+	start = ies + ies_offset;
+	search_len = *ies_len - ies_offset;
+
+	target_ie = rtw_get_ie(start, eid, &target_ielen, search_len);
+	if (target_ie && target_ielen) {
+		if (target_ielen != content_len) {
+			remain_ies = target_ie + 2 + target_ielen;
+			remain_len = search_len - (remain_ies - start);
+
+			backup_ies = rtw_malloc(remain_len);
+			if (!backup_ies)
+				goto exit;
+
+			_rtw_memcpy(backup_ies, remain_ies, remain_len);
+		}
+
+		_rtw_memcpy(target_ie + 2, content, content_len);
+		*(target_ie + 1) = content_len;
+		ret = _SUCCESS;
+
+		if (target_ielen != content_len) {
+			remain_ies = target_ie + 2 + content_len;
+			_rtw_memcpy(remain_ies, backup_ies, remain_len);
+			rtw_mfree(backup_ies, remain_len);
+			offset = content_len - target_ielen;
+			*ies_len = *ies_len + offset;
+		}
+	}
+exit:
+	return ret;
 }
 
 /**
@@ -1360,6 +1424,102 @@ u8 *rtw_get_owe_ie(const u8 *in_ie, uint in_len, u8 *owe_ie, uint *owe_ielen)
 	}
 
 	return (u8 *)oweie_ptr;
+}
+
+/* Add extended capabilities element infomation into ext_cap_data of driver */
+void rtw_add_ext_cap_info(u8 *ext_cap_data, u8 *ext_cap_data_len, u8 cap_info)
+{
+	u8 byte_offset = cap_info >> 3;
+	u8 bit_offset = cap_info % 8;
+
+	ext_cap_data[byte_offset] |= BIT(bit_offset);
+
+	/* Enlarge the length of EXT_CAP_IE */
+	if (byte_offset + 1 > *ext_cap_data_len)
+		*ext_cap_data_len = byte_offset + 1;
+
+	#ifdef DBG_EXT_CAP_IE
+	RTW_INFO("%s : cap_info = %u, byte_offset = %u, bit_offset = %u, ext_cap_data_len = %u\n", \
+			__func__, cap_info, byte_offset, bit_offset, *ext_cap_data_len);
+	#endif
+}
+
+/* Remvoe extended capabilities element infomation from ext_cap_data of driver */
+void rtw_remove_ext_cap_info(u8 *ext_cap_data, u8 *ext_cap_data_len, u8 cap_info)
+{
+	u8 byte_offset = cap_info >> 3;
+	u8 bit_offset = cap_info % 8;
+	u8 i, max_len = 0;
+
+	ext_cap_data[byte_offset] &= (~BIT(bit_offset));
+
+	/* Reduce the length of EXT_CAP_IE */
+	for (i = 0; i < WLAN_EID_EXT_CAP_MAX_LEN; i++) {
+		if (ext_cap_data[i] != 0x0)
+			max_len = i + 1;
+	}
+	*ext_cap_data_len = max_len;
+
+	#ifdef DBG_EXT_CAP_IE
+	RTW_INFO("%s : cap_info = %u, byte_offset = %u, bit_offset = %u, ext_cap_data_len = %u\n", \
+			__func__, cap_info, byte_offset, bit_offset, *ext_cap_data_len);
+	#endif
+}
+
+/**
+ * rtw_update_ext_cap_ie - add/update/remove the extended capabilities element of frame
+ *
+ * @ext_cap_data: from &(mlme_priv->ext_capab_ie_data)
+ * @ext_cap_data_len: length of ext_cap_data
+ * @ies: address of ies, e.g. pnetwork->IEs
+ * @ies_len: address of length of ies, e.g. &(pnetwork->IELength)
+ * @ies_offset: offset of ies, e.g. _BEACON_IE_OFFSET_
+ */
+u8 rtw_update_ext_cap_ie(u8 *ext_cap_data, u8 ext_cap_data_len, u8 *ies, u32 *ies_len, u8 ies_offset)
+{
+	u8 *extcap_ie;
+	uint extcap_len_field = 0;
+	uint ie_len = 0;
+
+	if (ext_cap_data_len != 0) {
+		extcap_ie = rtw_get_ie(ies + ies_offset, WLAN_EID_EXT_CAP, &extcap_len_field, *ies_len - ies_offset);
+
+		if (extcap_ie == NULL) {
+			rtw_set_ie(ies + *ies_len, WLAN_EID_EXT_CAP, ext_cap_data_len, ext_cap_data, &ie_len);
+			*ies_len += ie_len;
+		} else {
+			rtw_ies_update_ie(ies, ies_len, ies_offset, WLAN_EID_EXT_CAP, ext_cap_data, ext_cap_data_len);
+		}
+	} else {
+		rtw_ies_remove_ie(ies, ies_len, ies_offset, WLAN_EID_EXT_CAP, NULL, 0);
+	}
+
+	return _SUCCESS;
+}
+
+void rtw_parse_ext_cap_ie(u8 *ext_cap_data, u8 *ext_cap_data_len, u8 *ies, u32 ies_len, u8 ies_offset)
+{
+	u8 *extcap_ie;
+	uint extcap_len_field = 0;
+	u8 i;
+
+	extcap_ie = rtw_get_ie(ies + ies_offset, WLAN_EID_EXT_CAP, &extcap_len_field, ies_len - ies_offset);
+
+	if (extcap_ie != NULL) {
+		extcap_ie = extcap_ie + 2; /* element id and length filed */
+		if (*ext_cap_data_len == 0) {
+			_rtw_memcpy(ext_cap_data, extcap_ie, extcap_len_field);
+			*ext_cap_data_len = extcap_len_field;
+		} else {
+			for (i = 0; i < extcap_len_field; i++)
+				ext_cap_data[i] |= extcap_ie[i];
+		}
+
+		#ifdef DBG_EXT_CAP_IE
+		for (i = 0; i < extcap_len_field; i++)
+			RTW_INFO("%s : Parse extended capabilties[%u] = 0x%x\n", __func__, i, extcap_ie[i]);
+		#endif
+	}
 }
 
 static int rtw_ieee802_11_parse_vendor_specific(u8 *pos, uint elen,

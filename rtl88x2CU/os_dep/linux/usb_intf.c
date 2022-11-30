@@ -47,7 +47,6 @@ static void rtw_dev_shutdown(struct device *dev)
 	struct usb_interface *usb_intf = container_of(dev, struct usb_interface, dev);
 	struct dvobj_priv *dvobj = NULL;
 	_adapter *adapter = NULL;
-	struct cmd_priv *pcmdpriv;
 
 	RTW_INFO("%s\n", __func__);
 
@@ -71,18 +70,6 @@ static void rtw_dev_shutdown(struct device *dev)
 					else
 					#endif
 					{
-						RTW_PRINT("stop cmd thread during %s\n", __func__);
-						rtw_set_drv_stopped(adapter);	/*for stop thread*/
-						rtw_stop_drv_threads(adapter);
-						rtw_cancel_all_timer(adapter);
-						rtw_intf_stop(adapter);
-						pcmdpriv = &adapter->cmdpriv;
-						if (ATOMIC_READ(&(pcmdpriv->cmdthd_running)) == _TRUE) {
-							RTW_ERR("cmd_thread not stop !!\n");
-							rtw_warn_on(1);
-						} else {
-							RTW_PRINT("cmd thread is stopped during %s\n", __func__);
-						}
 						#ifdef CONFIG_BT_COEXIST
 						RTW_INFO("%s call halt notify\n", __FUNCTION__);
 						rtw_btcoex_HaltNotify(adapter);
@@ -305,7 +292,8 @@ static struct usb_device_id rtw_usb_id_tbl[] = {
 #endif /* CONFIG_RTL8814B */
 #ifdef CONFIG_RTL8723F
 	/*=== Realtek IC ===*/
-	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xB733, 0xff, 0xff, 0xff), .driver_info = RTL8723F}, 
+	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xB733, 0xff, 0xff, 0xff), .driver_info = RTL8723F}, /* USB multi-fuction */
+	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xF72B, 0xff, 0xff, 0xff), .driver_info = RTL8723F}, /* USB Single-fuction, WiFi only */
 #endif
 
 	{}	/* Terminating entry */

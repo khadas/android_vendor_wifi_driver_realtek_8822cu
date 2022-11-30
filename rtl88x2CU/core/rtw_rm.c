@@ -796,16 +796,36 @@ done:
 	return _SUCCESS;
 }
 
+static u8 cnt_rm_report_ies(struct rm_obj *prm, u8 eid, u8 *buf, u32 buf_len)
+{
+	u8 *pos = buf;
+	u8 id, len, cnt = 0;
+
+	while (pos - buf + 1 < buf_len) {
+		id = *pos;
+		len = *(pos + 1);
+
+		if (id == eid)
+			cnt++;
+			/*indicate_beacon_report(prm->psta->cmn.mac_addr,*/
+			/*1, 2 + len, pos);*/
+
+		pos += (2 + len);
+	}
+	return cnt;
+}
+
 /* receive measurement report */
 int rm_recv_radio_mens_rep(_adapter *padapter,
 	union recv_frame *precv_frame, struct sta_info *psta)
 {
-	int len, ret = _FALSE;
+	u32 len;
 	struct rm_obj *prm;
 	u32 rmid;
 	u8 *pdiag_body = (u8 *)(precv_frame->u.hdr.rx_data +
 		sizeof(struct rtw_ieee80211_hdr_3addr));
 	u8 *pmeas_body = &pdiag_body[3];
+	u8 bcn_rpt_cnt;
 
 
 	rmid = psta->cmn.aid << 16
@@ -847,11 +867,17 @@ int rm_recv_radio_mens_rep(_adapter *padapter,
 	/* report to upper via ioctl */
 	if ((prm->from_ioctl == true) &&
 		prm->q.m_type == bcn_req) {
-		len = pmeas_body[1] + 2; /* 2 : EID(1B)  length(1B) */
-		indicate_beacon_report(prm->psta->cmn.mac_addr,
-			1, len, pmeas_body);
+		len = precv_frame->u.hdr.len -
+				sizeof(struct rtw_ieee80211_hdr_3addr) -
+				3; /* Category + Action code + token */
+
+		bcn_rpt_cnt = cnt_rm_report_ies(prm, _MEAS_RSP_IE_,
+						pmeas_body, len);
+		if (bcn_rpt_cnt > 0)
+			indicate_beacon_report(prm->psta->cmn.mac_addr,
+					       bcn_rpt_cnt, len, pmeas_body);
 	}
-	return ret;
+	return _TRUE;
 }
 
 /* receive link measurement request */

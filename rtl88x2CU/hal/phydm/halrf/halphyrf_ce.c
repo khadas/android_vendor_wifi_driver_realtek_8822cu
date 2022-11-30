@@ -852,7 +852,7 @@ void odm_txpowertracking_callback_thermal_meter(void *adapter)
 	cali_info->tx_powercount = 0;
 }
 
-#if (RTL8822C_SUPPORT == 1 || RTL8814B_SUPPORT == 1)
+#if (RTL8822C_SUPPORT == 1 || RTL8814B_SUPPORT == 1  || RTL8723F_SUPPORT == 1)
 void
 odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 {
@@ -988,25 +988,17 @@ odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 	/*3 7. If necessary, move the index of swing table to adjust Tx power.*/
 	for (i = 0; i < c.rf_path_count; i++) {
 		if (i == RF_PATH_B) {
-			if (delta_swing_table_idx_tup_b)
-				odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_b, DELTA_SWINGIDX_SIZE);
-			if (delta_swing_table_idx_tdown_b)
-				odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_b, DELTA_SWINGIDX_SIZE);
+			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_b, DELTA_SWINGIDX_SIZE);
+			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_b, DELTA_SWINGIDX_SIZE);
 		} else if (i == RF_PATH_C) {
-			if (delta_swing_table_idx_tup_c)
-				odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_c, DELTA_SWINGIDX_SIZE);
-			if (delta_swing_table_idx_tdown_c)
-				odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_c, DELTA_SWINGIDX_SIZE);
+			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_c, DELTA_SWINGIDX_SIZE);
+			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_c, DELTA_SWINGIDX_SIZE);
 		} else if (i == RF_PATH_D) {
-			if (delta_swing_table_idx_tup_d)
-				odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_d, DELTA_SWINGIDX_SIZE);
-			if (delta_swing_table_idx_tdown_d)
-				odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_d, DELTA_SWINGIDX_SIZE);
+			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_d, DELTA_SWINGIDX_SIZE);
+			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_d, DELTA_SWINGIDX_SIZE);
 		} else {
-			if (delta_swing_table_idx_tup_a)
-				odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_a, DELTA_SWINGIDX_SIZE);
-			if (delta_swing_table_idx_tdown_a)
-				odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_a, DELTA_SWINGIDX_SIZE);
+			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_a, DELTA_SWINGIDX_SIZE);
+			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_a, DELTA_SWINGIDX_SIZE);
 		}
 
 		cali_info->delta_power_index_last[i] = cali_info->delta_power_index[i];	/*recording poer index offset*/

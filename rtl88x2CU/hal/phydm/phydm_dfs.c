@@ -50,7 +50,7 @@ void phydm_dfs_segment_distinguish(void *dm_void, enum rf_syn syn_path)
 {
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
 
-	if (!(dm->support_ic_type & (ODM_RTL8814B)))
+	if (!(dm->support_ic_type & (ODM_RTL8814B | ODM_RTL8814C)))
 		return;
 	if (syn_path == RF_SYN1)
 		dm->seg1_dfs_flag = 1;
@@ -62,7 +62,7 @@ void phydm_dfs_segment_flag_reset(void *dm_void)
 {
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
 
-	if (!(dm->support_ic_type & (ODM_RTL8814B)))
+	if (!(dm->support_ic_type & (ODM_RTL8814B | ODM_RTL8814C)))
 		return;
 	if (dm->seg1_dfs_flag)
 		dm->seg1_dfs_flag = 0;
@@ -81,7 +81,7 @@ void phydm_radar_detect_reset(void *dm_void)
 		odm_set_bb_reg(dm, R_0xf58, BIT(29), 0);
 		odm_set_bb_reg(dm, R_0xf58, BIT(29), 1);
 	#endif
-	} else if (dm->support_ic_type & (ODM_RTL8814B)) {
+	} else if (dm->support_ic_type & (ODM_RTL8814B | ODM_RTL8814C)) {
 		if (dm->seg1_dfs_flag == 1) {
 			odm_set_bb_reg(dm, R_0xa6c, BIT(0), 0);
 			odm_set_bb_reg(dm, R_0xa6c, BIT(0), 1);
@@ -102,7 +102,7 @@ void phydm_radar_detect_disable(void *dm_void)
 	if (dm->support_ic_type & (ODM_RTL8198F | ODM_RTL8822C | ODM_RTL8812F |
 				   ODM_RTL8197G | ODM_RTL8723F))
 		odm_set_bb_reg(dm, R_0xa40, BIT(15), 0);
-	else if (dm->support_ic_type & (ODM_RTL8814B)) {
+	else if (dm->support_ic_type & (ODM_RTL8814B | ODM_RTL8814C)) {
 		if (dm->seg1_dfs_flag == 1) {
 			odm_set_bb_reg(dm, R_0xa6c, BIT(0), 0);
 			dm->seg1_dfs_flag = 0;
@@ -444,7 +444,8 @@ void phydm_radar_detect_enable(void *dm_void)
 		}
 		if (region_domain == PHYDM_DFS_DOMAIN_ETSI) {
 			odm_set_bb_reg(dm, R_0xa40, MASKDWORD, 0xb25dc0bd);
-			if (dm->support_ic_type & (ODM_RTL8814B)) {
+			if (dm->support_ic_type &
+			    (ODM_RTL8814B | ODM_RTL8814C)) {
 				if (dm->seg1_dfs_flag == 1)
 					odm_set_bb_reg(dm, R_0xa6c, BIT(0), 1);
 			}
@@ -456,7 +457,8 @@ void phydm_radar_detect_enable(void *dm_void)
 			odm_set_bb_reg(dm, R_0x180c, 0xe0000, 0x0);
 		} else if (region_domain == PHYDM_DFS_DOMAIN_MKK) {
 			odm_set_bb_reg(dm, R_0xa40, MASKDWORD, 0xb25dc0bd);
-			if (dm->support_ic_type & (ODM_RTL8814B)) {
+			if (dm->support_ic_type &
+			    (ODM_RTL8814B | ODM_RTL8814C)) {
 				if (dm->seg1_dfs_flag == 1)
 					odm_set_bb_reg(dm, R_0xa6c, BIT(0), 1);
 			}
@@ -468,7 +470,8 @@ void phydm_radar_detect_enable(void *dm_void)
 			odm_set_bb_reg(dm, R_0x180c, 0xe0000, 0x0);
 		} else if (region_domain == PHYDM_DFS_DOMAIN_FCC) {
 			odm_set_bb_reg(dm, R_0xa40, MASKDWORD, 0xb25dc0bd);
-			if (dm->support_ic_type & (ODM_RTL8814B)) {
+			if (dm->support_ic_type &
+			    (ODM_RTL8814B | ODM_RTL8814C)) {
 				if (dm->seg1_dfs_flag == 1)
 					odm_set_bb_reg(dm, R_0xa6c, BIT(0), 1);
 			}
@@ -956,7 +959,7 @@ phydm_radar_detect_dm_check(
 			odm_set_bb_reg(dm, R_0xf58, BIT(29), 1);
 		}
 	#endif
-	} else if (dm->support_ic_type & (ODM_RTL8814B)) {
+	} else if (dm->support_ic_type & (ODM_RTL8814B | ODM_RTL8814C)) {
 		if (dm->seg1_dfs_flag == 1)
 			radar_rpt_reg_value = odm_get_bb_reg(dm, R_0x2e20,
 							     0xffffffff);

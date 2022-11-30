@@ -18277,7 +18277,7 @@ odm_read_and_config_mp_8822c_radioa(struct dm_struct *dm)
 u32
 odm_get_version_mp_8822c_radioa(void)
 {
-		return 61;
+		return 62;
 }
 
 /******************************************************************************
@@ -36870,7 +36870,7 @@ odm_read_and_config_mp_8822c_radiob(struct dm_struct *dm)
 u32
 odm_get_version_mp_8822c_radiob(void)
 {
-		return 61;
+		return 62;
 }
 
 /******************************************************************************
